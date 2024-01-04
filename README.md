@@ -3,4 +3,4 @@
 * Winter 2024
 # Package List
 This repository consists of several ROS2 packages
-- <PACKAGE1> - <one sentence description>
+- nuturtle_discription - Contains URDF files for the turtlebot
