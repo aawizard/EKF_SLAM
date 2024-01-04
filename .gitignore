@@ -1,0 +1,21 @@
+##Done using github Copilot
+# Build artifacts
+build/
+install/
+
+# Compiled output
+bin/
+lib/
+
+# ROS2 workspace
+install/
+log/
+build/
+
+# IDE files
+.vscode/
+.idea/
+
+# Miscellaneous
+*.swp
+.DS_Store
