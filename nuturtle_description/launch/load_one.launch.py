@@ -22,19 +22,19 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 name="use_jsp",
                 default_value="true",
-                description="true (default): use joint_state_publisher,\
-                    false: no joint states published",
+                description="true (default): use joint_state_publisher,false: no joint states published",
             ),
             DeclareLaunchArgument(
                 name="use_rviz",
                 default_value="true",
-                description="true (default): start rviz, \
-                    otherwise don't start rviz",
+                description="true (default): start rviz, otherwise don't start rviz",
             ),
-            # Node(package="joint_state_publisher_gui",
-            #      executable="joint_state_publisher_gui",
-            #      condition= LaunchConfigurationEquals("use_jsp", "gui")
-            #      ),
+            DeclareLaunchArgument(
+                name="color",
+                default_value="purple",
+                description="Select the color of the robot.",
+                choices=["purple", "red", "blue", "green"],
+            ),
             Node(
                 package="joint_state_publisher",
                 executable="joint_state_publisher",
@@ -54,13 +54,14 @@ def generate_launch_description():
                                     [
                                         FindPackageShare("nuturtle_description"),
                                         "urdf",
-                                        "turtlebot3_burger.urdf.xacro",
+                                        "turtlebot3_burger.urdf.xacro"
                                     ]
-                                ),
+                                ), " ", "color:=", LaunchConfiguration("color"),
                             ]
                         )
                     }
                 ],
+                
             ),
             Node(
                 package="rviz2",
