@@ -87,7 +87,7 @@ def generate_launch_description():
                             LaunchConfiguration("rviz_config"),
                         ]
                     ),
-                    " ", "-f", [LaunchConfiguration("color"),"/base_link"]
+                    " ", "-f", [LaunchConfiguration("color"),"/base_footprint"]
                 ],
                 condition=IfCondition(
                     EqualsSubstitution(LaunchConfiguration("use_rviz"), "true")
