@@ -12,10 +12,10 @@ namespace turtlelib {
     return rad;
 }
 
- std::ostream & operator<<(std::ostream & os, const Point2D & p){
+//  std::ostream & operator<<(std::ostream & os, const Point2D & p){
 
-    return os;
- }
+//     return os;
+//  }
 
 
 

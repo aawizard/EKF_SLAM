@@ -1,9 +1,4 @@
-# Lines that begin with a # are comments
-# set the minimum required version of cmake, usually the first line
 cmake_minimum_required(VERSION 3.22)
-
-# project_name sets the name of the project and causes cmake to
-# find the c and c++ compilers
 project(turtlelib)
 
 # Find your dependencies.
@@ -13,7 +8,7 @@ project(turtlelib)
 # That is defined to reference the library
 # here: we find the eigen library as per the instruction
 # https://eigen.tuxfamily.org/dox/TopicCMakeGuide.html
-find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(Eigen3 3.3 REQUIRED)
 
 # Create a library.  Can specify if it is shared or static but usually
 # you don't need or want to.
@@ -56,13 +51,13 @@ target_compile_features(turtlelib PUBLIC cxx_std_17)
 target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 
 # install the include files by copying the whole include directory
-install(DIRECTORY include DESTINATION include)
+install(DIRECTORY include/turtlelib DESTINATION include)
 
 # Create a CMake Exported Target containing the lib and exe.
 # Also create CMake Export called projet_name-targets
 # The CMake Export contains files that allow other CMake projects
 # to find this project. It must be installed separately.
-install(TARGETS ${PROJECT_NAME} EXPORT project_name-targets)
+install(TARGETS ${PROJECT_NAME} EXPORT turtlelib-targets)
 
 # The project_name-targets created by install(TARGETS) needs to be installed.
 # install(EXPORT ...) will generate a file called project_name-config.cmake
@@ -71,9 +66,9 @@ install(TARGETS ${PROJECT_NAME} EXPORT project_name-targets)
 # find_package(project_name) from another cmake project
 # A user can then target_link_libraries(target project_name::library)
 # to use the libraries installed here
-install(EXPORT project_name-targets
-        FILE project_name-config.cmake
-        NAMESPACE project_name::
+install(EXPORT turtlelib-targets
+        FILE turtlelib-config.cmake
+        NAMESPACE turtlelib::
         DESTINATION lib/cmake/${PROJECT_NAME})
 
 
