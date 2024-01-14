@@ -52,7 +52,6 @@ public:
     y_ = this->get_parameter("y0").as_double();
     theta_ = this->get_parameter("theta0").as_double();
 
-    
     change_position(x_, y_, theta_);
   }
 
@@ -110,7 +109,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr publisher_;
   geometry_msgs::msg::TransformStamped t;
   size_t count_;
-  double x_ = 0.0;;
+  double x_ = 0.0;
   double y_ = 0.0;
   double theta_ = 0.0;
 };
