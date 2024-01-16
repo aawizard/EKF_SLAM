@@ -13,6 +13,7 @@ find_package(std_srvs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}_srv
 
@@ -25,7 +26,7 @@ rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl
 
 add_executable(nusim src/nusim.cpp)
 
-ament_target_dependencies(nusim rclcpp std_msgs std_srvs tf2 tf2_ros)
+ament_target_dependencies(nusim rclcpp std_msgs std_srvs tf2 tf2_ros visualization_msgs)
 target_link_libraries(nusim ${cpp_typesupport_target})
 install(TARGETS
   nusim
