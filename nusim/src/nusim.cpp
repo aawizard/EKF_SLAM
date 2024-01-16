@@ -27,16 +27,25 @@ public:
     this->declare_parameter("rate", 200);
     this->declare_parameter("x0", 0.0);
     this->declare_parameter("y0", 0.0);
+    //parameter for wall
     this->declare_parameter("theta0", 0.0);
     this->declare_parameter("arena_x_length", 2.0);
-    this->declare_parameter("arena_y_length", 1.0);
+    this->declare_parameter("arena_y_length", 2.0);
 
-    auto rate = this->get_parameter("rate").as_int();
+    //parameters for obstacles
+    this->declare_parameter("obstacles/x", obstacle_x_);
+    this->declare_parameter("obstacles/y", obstacle_y_);
+    this->declare_parameter("obstacles/radius", 0.05);
+
+    auto rate = get_parameter("rate").as_int();
     rclcpp::QoS qos_policy = rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
 
     publisher_timestep_ = this->create_publisher<std_msgs::msg::UInt64>("~/timestep", 10);
     publisher_walls_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
       "~/walls",
+      qos_policy);
+    publisher_obstacles_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+      "~/obstacles",
       qos_policy);
     //service
     reset_service = this->create_service<std_srvs::srv::Empty>(
@@ -58,14 +67,19 @@ public:
 
     //setting values of x,y,z
 
-    x_ = this->get_parameter("x0").as_double();
-    y_ = this->get_parameter("y0").as_double();
-    theta_ = this->get_parameter("theta0").as_double();
-    arena_x_length_ = this->get_parameter("arena_x_length").as_double();
-    arena_y_length_ = this->get_parameter("arena_y_length").as_double();
-
+    x_ = get_parameter("x0").as_double();
+    y_ = get_parameter("y0").as_double();
+    theta_ = get_parameter("theta0").as_double();
+    arena_x_length_ = get_parameter("arena_x_length").as_double();
+    arena_y_length_ = get_parameter("arena_y_length").as_double();
+    obstacle_x_ = get_parameter("obstacles/x").as_double_array();
+    obstacle_y_ = get_parameter("obstacles/y").as_double_array();
+    std::vector<double> k = get_parameter("obstacles/x").as_double_array();
+    obstacle_radius_ = get_parameter("obstacles/radius").as_double();
     change_position(x_, y_, theta_);
+
     show_walls();
+    make_obstacles();
   }
 
 private:
@@ -75,7 +89,7 @@ private:
   {
     count_ = 0;
     change_position(0.0, 0.0, 0.0);
-    RCLCPP_INFO(this->get_logger(), "Resetting count");
+    RCLCPP_INFO(get_logger(), "Resetting count");
   }
 
   void change_position(double x, double y, double theta)
@@ -85,7 +99,7 @@ private:
     x_ = x;
     y_ = y;
     theta_ = theta;
-    t.header.stamp = this->get_clock()->now();
+    t.header.stamp = get_clock()->now();
     t.transform.translation.x = x;
     t.transform.translation.y = y;
     tf2::Quaternion q;
@@ -104,7 +118,7 @@ private:
     x_ = request->x;
     y_ = request->y;
     theta_ = request->theta;
-    RCLCPP_INFO(this->get_logger(), "Teleporting robot");
+    RCLCPP_INFO(get_logger(), "Teleporting robot");
     change_position(x_, y_, theta_);
   }
 
@@ -112,17 +126,16 @@ private:
   {
     auto message = std_msgs::msg::UInt64();
     message.data = count_++;
-    RCLCPP_INFO_STREAM(get_logger(), "Publishing: '" << message.data << "'");
+    // RCLCPP_INFO_STREAM(get_logger(), "Publishing: '" << message.data << "'");
     publisher_timestep_->publish(message);
-    // tf_broadcaster_->sendTransform(t);
-    //TODO: publish walls
+    tf_broadcaster_->sendTransform(t);
   }
 
   visualization_msgs::msg::Marker make_wall(int id, double scale[], const double pose[])
   {
     visualization_msgs::msg::Marker marker;
     marker.header.frame_id = "nusim/world";
-    marker.header.stamp = this->get_clock()->now();
+    marker.header.stamp = get_clock()->now();
     marker.type = visualization_msgs::msg::Marker::CUBE;
     marker.action = visualization_msgs::msg::Marker::ADD;
     marker.scale.x = scale[0];
@@ -138,6 +151,35 @@ private:
     marker.frame_locked = true;
     return marker;
 
+  }
+
+  void make_obstacles()
+  {
+    auto obstacles = visualization_msgs::msg::MarkerArray();
+    auto obstacle = visualization_msgs::msg::Marker();
+    if (obstacle_x_.size() != obstacle_y_.size()) {
+      RCLCPP_ERROR_STREAM(get_logger(), "Obstacle x and y vectors are not the same size");
+      return;
+    }
+    for (int i = 0; i < int(obstacle_x_.size()); ++i) {
+      obstacle.header.frame_id = "nusim/world";
+      obstacle.header.stamp = get_clock()->now();
+      obstacle.type = visualization_msgs::msg::Marker::CYLINDER;
+      obstacle.action = visualization_msgs::msg::Marker::ADD;
+      obstacle.color.r = 1.0;
+      obstacle.color.a = 1.0;
+      obstacle.id = i + 4;
+      obstacle.frame_locked = true;
+      obstacle.scale.x = obstacle_radius_ * 2;
+      obstacle.scale.y = obstacle_radius_ * 2;
+      obstacle.scale.z = wall_height;
+      obstacle.pose.position.x = obstacle_x_[i];
+      obstacle.pose.position.y = obstacle_y_[i];
+      obstacle.pose.position.z = wall_height / 2;
+
+      obstacles.markers.push_back(obstacle);
+    }
+    publisher_obstacles_->publish(obstacles);
   }
 
   void show_walls()
@@ -180,6 +222,7 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr publisher_timestep_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_walls_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_obstacles_;
   geometry_msgs::msg::TransformStamped t = geometry_msgs::msg::TransformStamped();
   double x_ = 0.0;
   double y_ = 0.0;
@@ -188,6 +231,10 @@ private:
   double wall_thickness = 0.10;
   double arena_x_length_ = 1.0;
   double arena_y_length_ = 1.0;
+
+  std::vector<double> obstacle_x_ = {0.25f, 0.35f};
+  std::vector<double> obstacle_y_ = {0.25f, -0.25f};
+  float obstacle_radius_ = 0.05;
   size_t count_;
 
 };

@@ -19,8 +19,9 @@
   <depend>std_srvs</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
+  <exec_depend>nuturle_description</exec_depend>
 
-  
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
   <exec_depend>turtlebot3_bringup</exec_depend>
