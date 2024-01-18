@@ -3,3 +3,5 @@
 https://github.com/ros-visualization/rqt/issues/187   (qos)
 https://foxglove.dev/blog/how-to-use-ros2-parameters (list as a parameter)
 https://docs.ros2.org/bouncy/api/rclcpp/classrclcpp_1_1_parameter.html (convert parameter to array)
+
+Task B - CMakeList (Allan)

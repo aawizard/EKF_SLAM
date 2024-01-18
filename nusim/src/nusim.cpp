@@ -84,8 +84,8 @@ public:
 
 private:
   void reset_callback(
-    const std::shared_ptr<std_srvs::srv::Empty::Request> request,
-    std::shared_ptr<std_srvs::srv::Empty::Response> response)
+    const std::shared_ptr<std_srvs::srv::Empty::Request>,
+    std::shared_ptr<std_srvs::srv::Empty::Response>)
   {
     count_ = 0;
     change_position(0.0, 0.0, 0.0);
@@ -94,26 +94,27 @@ private:
 
   void change_position(double x, double y, double theta)
   {
-    t.header.frame_id = "nusim/world";
-    t.child_frame_id = "red/base_footprint";
     x_ = x;
     y_ = y;
     theta_ = theta;
+    t.header.frame_id = "nusim/world";
+    t.child_frame_id = "red/base_footprint";
     t.header.stamp = get_clock()->now();
     t.transform.translation.x = x;
     t.transform.translation.y = y;
+    t.transform.translation.z = 0.0;
     tf2::Quaternion q;
     q.setRPY(0, 0, theta);
     t.transform.rotation.x = q.x();
     t.transform.rotation.y = q.y();
     t.transform.rotation.z = q.z();
     t.transform.rotation.w = q.w();
-    tf_broadcaster_->sendTransform(t);
+    // tf_broadcaster_->sendTransform(t);
   }
 
   void teleport_callback(
     const std::shared_ptr<nusim::srv::Teleport::Request> request,
-    std::shared_ptr<nusim::srv::Teleport::Response> response)
+    std::shared_ptr<nusim::srv::Teleport::Response>)
   {
     x_ = request->x;
     y_ = request->y;
@@ -232,8 +233,8 @@ private:
   double arena_x_length_ = 1.0;
   double arena_y_length_ = 1.0;
 
-  std::vector<double> obstacle_x_ = {0.25f, 0.35f};
-  std::vector<double> obstacle_y_ = {0.25f, -0.25f};
+  std::vector<double> obstacle_x_ = {0.25, 0.35};
+  std::vector<double> obstacle_y_ = {0.25, -0.25};
   float obstacle_radius_ = 0.05;
   size_t count_;
 
