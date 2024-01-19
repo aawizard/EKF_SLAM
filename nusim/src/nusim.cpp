@@ -60,7 +60,7 @@ public:
 
     //timer
     timer_ = this->create_wall_timer(
-      1s / rate, std::bind(&Nusim::timer_callback, this));
+      1000ms / rate, std::bind(&Nusim::timer_callback, this));
     //tf
     tf_broadcaster_ =
       std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -129,6 +129,7 @@ private:
     message.data = count_++;
     // RCLCPP_INFO_STREAM(get_logger(), "Publishing: '" << message.data << "'");
     publisher_timestep_->publish(message);
+    t.header.stamp = get_clock()->now();
     tf_broadcaster_->sendTransform(t);
   }
 

@@ -1,3 +1,4 @@
+
 #ifndef TURTLELIB_SE2_INCLUDE_GUARD_HPP
 #define TURTLELIB_SE2_INCLUDE_GUARD_HPP
 /// \file
@@ -95,6 +96,9 @@ namespace turtlelib
         /// for a description
         friend std::ostream & operator<<(std::ostream & os, const Transform2D & tf);
 
+        private:
+        Point2D point;
+        double theta;
     };
 
 
