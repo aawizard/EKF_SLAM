@@ -77,8 +77,8 @@ namespace turtlelib {
     }
     Transform2D & Transform2D::operator*=(const Transform2D & rhs){
         Transform2D t;
-        t.point.x = point.x * cos(rhs.theta) - point.y * sin(rhs.theta) + rhs.point.x;
-        t.point.y = point.x * sin(rhs.theta) + point.y * cos(rhs.theta) + rhs.point.y;
+        t.point.x = rhs.point.x * cos(theta) - rhs.point.y * sin(theta) + point.x;
+        t.point.y = rhs.point.x * sin(theta) + rhs.point.y * cos(theta) + point.y;
         t.theta = theta + rhs.theta;
         
         point.x = t.point.x;
@@ -100,23 +100,27 @@ namespace turtlelib {
     std::ostream & operator<<(std::ostream & os, const Transform2D & tf){
         std::stringstream ss;
         
-        ss << "deg: " << tf.rotation() * 180.0 / PI << " x: " << tf.point.x << " y:" << tf.point.y  <<;
+        ss << "deg: " << rad2deg(tf.rotation()) << " x: " << tf.point.x << " y: " << tf.point.y;
         return os << ss.str();
     }
-    // std::istream & operator>>(std::istream & is, Transform2D & tf){
-    //     char c;
-    //     is >> c;
-    //     if (c == 'd')
-    //     {
-    //         is >> tf.point.x >> tf.point.y >> tf.theta >> c;
-    //     }
-    //     else
-    //     {
-    //         is.putback(c);
-    //         is >> tf.point.x >> tf.point.y >> tf.theta;
-    //     }
-    //     return is;
-    // }
+    std::istream & operator>>(std::istream & is, Transform2D & tf){
+        char c1 = is.get();
+        std::string c3 ,c4, c5;
+        double deg ;
+        Vector2D v ;
+
+        if (c1 == 'd'){
+
+            is>>c3>>deg>>c4>>v.x>>c5>>v.y; ///NOTE: Not right. Need to work on this.
+        }
+        else{
+            is.putback(c1);
+            is >>deg>>v.x>>v.y;
+        }
+        Transform2D new_o{v,deg2rad(deg)};
+        tf = new_o;
+        return is;
+    }
     Transform2D operator*(Transform2D lhs, const Transform2D & rhs){
         lhs *= rhs;
         return lhs;
