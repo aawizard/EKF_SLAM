@@ -9,9 +9,9 @@ using namespace turtlelib;
 
 TEST_CASE("Test SVG constructor", "[SVG]"){
     SVG svg;
-    svg.draw_point(Point2D{4.0,3.0}, "purple");
-    svg.draw_line(Point2D{1.5,1.5},Point2D{4.0,2.0} , "purple");
-    svg.draw_Transform2D(Transform2D(Vector2D{1,1}, PI/2), "a");
+    svg.draw_point(Point2D{4.0,3.0}, Transform2D(Vector2D{0,0}, 0), "purple");
+    svg.draw_line(Vector2D{3.5,3.5},Vector2D{2.0,2.0}, Transform2D(Vector2D{0,0}, 0) , "purple");
+    svg.draw_Transform2D(Transform2D(Vector2D{1,0}, 0), "a");
     svg.export_svg();
     std::ifstream infile("my_drawing.svg");
     std::stringstream ss;
@@ -28,11 +28,11 @@ TEST_CASE("Test SVG constructor", "[SVG]"){
 </defs>
 
 <circle cx="792.000000" cy="240.000000" r="3" stroke="purple" fill="purple" stroke-width="1" />
-          <line x1="792.000000" x2="552.000000" y1="336.000000" y2="384.000000" stroke="purple" stroke-width="5" marker-start="url(#Arrow1Sstart) " />
+          <line x1="744.000000" x2="600.000000" y1="192.000000" y2="336.000000" stroke="purple" stroke-width="5" marker-start="url(#Arrow1Sstart) " />
         <g>
-          <line x1="504.000000" x2="504.000000" y1="336.000000" y2="432.000000" stroke="red" stroke-width="5" marker-start="url(#Arrow1Sstart) " />
-          <line x1="408.000000" x2="504.000000" y1="432.000000" y2="432.000000" stroke="green" stroke-width="5" marker-start="url(#Arrow1Sstart) " />
-        <text x="504.000000" y="432.000000">{a}</text>
+          <line x1="600.000000" x2="504.000000" y1="528.000000" y2="528.000000" stroke="red" stroke-width="5" marker-start="url(#Arrow1Sstart) " />
+          <line x1="504.000000" x2="504.000000" y1="432.000000" y2="528.000000" stroke="green" stroke-width="5" marker-start="url(#Arrow1Sstart) " />
+        <text x="504.000000" y="528.000000">{a}</text>
         </g>
 </svg>)";
     REQUIRE(ss.str() == str);

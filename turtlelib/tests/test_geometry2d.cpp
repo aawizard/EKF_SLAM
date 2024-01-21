@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include"turtlelib/geometry2d.hpp"
 #include<sstream>
 using namespace turtlelib;
@@ -79,4 +80,15 @@ TEST_CASE("Test operator>>", "[operator>> vector]"){
     ss1 >> v;
     REQUIRE(v.x == 1.0);
     REQUIRE(v.y == 2.0);
+}
+
+TEST_CASE("Test normalize_vector", "[normalize_vector]"){
+    Vector2D v;
+    v.x = 1.0;
+    v.y = 1.0;
+    Vector2D v1 = normalize_vector(v);
+    REQUIRE_THAT(v1.x,
+        Catch::Matchers::WithinAbs(0.8, 0.1));
+    REQUIRE_THAT(v1.y,
+        Catch::Matchers::WithinAbs(0.8, 0.1));
 }

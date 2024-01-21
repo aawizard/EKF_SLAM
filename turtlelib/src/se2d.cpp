@@ -64,20 +64,10 @@ namespace turtlelib {
     Twist2D Transform2D::operator()(Twist2D v) const{
         Twist2D t;
         t.omega = v.omega;
-        t.x = (v.x * cos(theta)) - (v.y * sin(theta)) + (point.x*v.omega);
-        t.y = (v.x * sin(theta)) + (v.y * cos(theta)) - (point.y*v.omega);
+        t.x = (v.x * cos(theta)) - (v.y * sin(theta)) + (point.y*v.omega);
+        t.y = (v.x * sin(theta)) + (v.y * cos(theta)) - (point.x*v.omega);
         return t;
     }
-
-    // Twist2D Transform2D::operator()(Twist2D v) const{
-    //     Twist2D tw;
-    //     tw.omega = v.omega;
-    //     tw.x = (v.x*cos(ang))-(v.y*sin(ang))+(v.omega*t.y);
-    //     tw.y = (v.x*sin(ang))+(v.y*cos(ang))-(v.omega*t.x);
-    //     return Twist2D{tw.omega,tw.x,tw.y};
-    // }
-
-
 
     Transform2D Transform2D::inv() const{
         Transform2D t;
@@ -122,7 +112,7 @@ namespace turtlelib {
 
         if (c1 == 'd'){
 
-            is>>c3>>deg>>c4>>v.x>>c5>>v.y; ///NOTE: Not right. Need to work on this.
+            is>>c3>>deg>>c4>>v.x>>c5>>v.y; 
         }
         else{
             is.putback(c1);

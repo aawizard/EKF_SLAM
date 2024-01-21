@@ -12,9 +12,9 @@
     - [x] Task B.1
     - [x] Task B.2
     - [x] Task B.3
-    - [ ] Task B.4
+    - [x] Task B.4
     - [x] Task B.5
-    - [ ] Task B.6
+    - [x] Task B.6
     - [ ] Task B.7
 
 - [ ] The Simulator - Task C

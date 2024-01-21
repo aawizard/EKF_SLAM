@@ -9,7 +9,6 @@ using namespace std;
 
 namespace turtlelib{
     SVG::SVG(){
-        std::cout<<"SVG constructor"<<std::endl;
         root=R"(
 <svg width="8.500000in" height="11.000000in" viewBox="0 0 816.000000 1056.000000" xmlns="http://www.w3.org/2000/svg">
 
@@ -22,36 +21,30 @@ namespace turtlelib{
 </defs>
 
 )";
-
-
-
-// </svg>
         std::ofstream outfile("my_drawing.svg");
         outfile << std::string(root);
     }
 
 
-    void SVG::draw_point(const Point2D p){
-        std::cout<<"draw_point"<<std::endl;
+    void SVG::draw_point( Point2D p, Transform2D t){
+
+        Point2D pt = t(p);
         root+=R"(<circle cx=")";
-        // turtlelib::Point2D pixel_pt;
-        // pixel_pt.x = pt.x *96.0 + 8.5/2.0*96.0;
-        // pixel_pt.y = -pt.y *96.0 + 11.0/2.0*96.0;
-        root+=to_string(p.x*96.0 + 8.5/2.0*96.0);
+        root+=to_string(pt.x*96.0 + 8.5/2.0*96.0);
         // 504.2
         root+=R"(" cy=")";
         // 403.5
-        root+=to_string(-p.y*96.0 + 11.0/2.0*96.0);
+        root+=to_string(-pt.y*96.0 + 11.0/2.0*96.0);
         root+=R"(" r="3" stroke="purple" fill="purple" stroke-width="1" />)";
     }
-    void SVG::draw_point(const Point2D p, const std::string color){
-        std::cout<<"draw_point"<<std::endl;
+    void SVG::draw_point( Point2D p, Transform2D t, const std::string color){
+        Point2D pt = t(p);
         root+=R"(<circle cx=")";
-        root+=to_string(p.x*96.0 + 8.5/2.0*96.0);
+        root+=to_string(pt.x*96.0 + 8.5/2.0*96.0);
         // 504.2
         root+=R"(" cy=")";
         // 403.5
-        root+=to_string(-p.y*96.0 + 11.0/2.0*96.0);
+        root+=to_string(-pt.y*96.0 + 11.0/2.0*96.0);
         root+=R"(" r="3" stroke=")";
         root+=color;
         root+=R"(" fill="purple" stroke-width="1" />)";
@@ -59,56 +52,50 @@ namespace turtlelib{
 
 
 
-    void SVG::draw_line( Point2D p1,  Point2D p2){
+    void SVG::draw_line( Vector2D head,  Vector2D tail, Transform2D t){
+      Point2D head1{head.x, head.y};
+      Point2D tail1{tail.x, tail.y}; 
+      Point2D head_ = t(head1);
+      Point2D tail_ = t(tail1);
 
-        std::cout<<"draw_line"<<std::endl;
         root+=R"(
           <line x1=")";
-        root+=to_string(p1.x*96.0 + 8.5/2.0*96.0);
+        root+=to_string(head_.x*96.0 + 8.5/2.0*96.0);
         root+=R"(" x2=")";
-        root+=to_string(p2.x*96.0 + 8.5/2.0*96.0);
+        root+=to_string(tail_.x*96.0 + 8.5/2.0*96.0);
         root+=R"(" y1=")";
-        root+=to_string(-p1.y*96.0 + 11.0/2.0*96.0);
+        root+=to_string(-head_.y*96.0 + 11.0/2.0*96.0);
         root+=R"(" y2=")";
-        root+=to_string(-p2.y*96.0 + 11.0/2.0*96.0);
+        root+=to_string(-tail_.y*96.0 + 11.0/2.0*96.0);
         root+=R"(" stroke="purple" stroke-width="5" marker-start="url(#Arrow1Sstart) " />)";
     }
-     void SVG::draw_line( Point2D p1,  Point2D p2,   std::string color){
-
-        std::cout<<"draw_line"<<std::endl;
+     void SVG::draw_line( Vector2D head,  Vector2D tail, Transform2D t,  std::string color){
+      Point2D head1{head.x, head.y};
+      Point2D tail1{tail.x, tail.y}; 
+      Point2D head_ = t(head1);
+      Point2D tail_ = t(tail1);
         root+=R"(
           <line x1=")";
-        root+=to_string(p2.x*96.0 + 8.5/2.0*96.0);
+        root+=to_string(head_.x*96.0 + 8.5/2.0*96.0);
         root+=R"(" x2=")";
-        root+=to_string(p1.x*96.0 + 8.5/2.0*96.0);
+        root+=to_string(tail_.x*96.0 + 8.5/2.0*96.0);
         root+=R"(" y1=")";
-        root+=to_string(-p2.y*96.0 + 11.0/2.0*96.0);
+        root+=to_string(-head_.y*96.0 + 11.0/2.0*96.0);
         root+=R"(" y2=")";
-        root+=to_string(-p1.y*96.0 + 11.0/2.0*96.0);
+        root+=to_string(-tail_.y*96.0 + 11.0/2.0*96.0);
         root+=R"(" stroke=")";
         root+=color;
         root+=R"(" stroke-width="5" marker-start="url(#Arrow1Sstart) " />)";
       }
 
     void SVG::draw_Transform2D( Transform2D t ,  std::string name){
-      Point2D x{1.0,0};
-      Point2D y{0,1.0};
-      Point2D x_ = t(x);
-      Point2D y_ = t(y);
-
-      
-      // <g>
-//   <line x1="504.000000" x2="408.000000" y1="528.000000" y2="528.000000" stroke="red" stroke-width="5" marker-start="url(#Arrow1Sstart) " />
-//   <line x1="408.000000" x2="408.000000" y1="432.000000" y2="528.000000" stroke="green" stroke-width="5" marker-start="url(#Arrow1Sstart) " />
-//   <text x="408.000000" y="528.250000">{a}</text>
-// </g>
 
       root+=R"(
         <g>)";
-      Point2D origin{t.translation().x, t.translation().y};
+      
 
-      draw_line( origin,x_, "red");
-      draw_line( origin,y_, "green");
+      draw_line( Vector2D{1,0},Vector2D{0,0}, t ,"red");
+      draw_line( Vector2D{0,1},Vector2D{0,0}, t , "green");
       root+=R"(
         <text x=")";
       root+=to_string(t.translation().x*96.0 + 8.5/2.0*96.0);
@@ -122,35 +109,16 @@ namespace turtlelib{
     }
 
     void SVG::export_svg(){
-        std::cout<<"export_svg"<<std::endl;
         root+=R"(
 </svg>)";
         std::ofstream outfile("my_drawing.svg");
         outfile << std::string(root);
     }
+
+    void SVG::export_svg(std::string filename){
+        root+=R"(
+</svg>)";
+        std::ofstream outfile(filename);
+        outfile << std::string(root);
+    }
 }
-
-
-// int main() {
-//     // SVG::SVG root;
-//     // // Basic CSS support
-//     // root.style("circle").set_attr("fill", "#000000")
-//     //     .set_attr("stroke", "#000000");
-//     // root.style("rect#my_rectangle").set_attr("fill", "red");
-//     // // Method 1 of adding elements - add_child<>()
-//     // auto shapes = root.add_child<SVG::Group>();
-//     // auto rect = shapes->add_child<SVG::Rect>("my_rectangle");
-//     // // Method 2 of adding elements - operator<<
-//     // *shapes << SVG::Circle(-100, -100, 100) << SVG::Circle(100, 100, 100);
-//     // // Reference elements by id, tag, class name, etc...
-//     // root.get_element_by_id("my_rectangle")
-//     //     ->set_attr("x", 20).set_attr("y", 20)
-//     //     .set_attr("width", 40).set_attr("height", 40);
-//     // std::cout << "There are " << root.get_children<SVG::Circle>().size() <<
-//     //     " circles." << std::endl;
-//     // // Automatically scale width and height to fit elements
-//     // root.autoscale();
-//     // // Output our drawing
-//     std::ofstream outfile("my_drawing.svg");
-//     outfile << std::string(root);
-// }

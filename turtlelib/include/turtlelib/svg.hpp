@@ -12,23 +12,27 @@ namespace turtlelib
         SVG();
         /// \brief draw a point on the svg file
         /// \param p the point to draw
-        void draw_point(const Point2D p);
+        /// \param t the frame to draw the point in
+        void draw_point( Point2D p, Transform2D t);
 
         /// \brief draw a point on the svg file with a specified color
         /// \param p the point to draw
         /// \param color the color of the point
-        void draw_point(const Point2D p, const std::string color);
+        /// \param t the frame to draw the point in
+        void draw_point( Point2D p, Transform2D t, std::string color);
 
         /// \brief draw a line on the svg file
-        /// \param p1 the first point of the line
-        /// \param p2 the second point of the line
-        void draw_line( Point2D p1,  Point2D p2);
+        /// \param head the first point of the line
+        /// \param tail the second point of the line
+        /// \param t the frame to draw the line in
+        void draw_line( Vector2D head,  Vector2D tail, Transform2D t);
 
         /// \brief draw a line on the svg file with a specified color
-        /// \param p1 the first point of the line
-        /// \param p2 the second point of the line
+        /// \param head the first point of the line
+        /// \param tail the second point of the line
         /// \param color the color of the line
-        void draw_line( Point2D p1,  Point2D p2,  std::string color);
+        /// \param t the frame to draw the line in
+        void draw_line( Vector2D head,  Vector2D tail, Transform2D t,  std::string color);
 
         /// \brief draw a frame the svg file 
         /// \param t the frame to draw
@@ -37,6 +41,10 @@ namespace turtlelib
 
         /// \brief export the svg file
         void export_svg();
+
+        /// \brief export the svg file with a specified filename
+        /// \param filename the name of the file to export
+        void export_svg(std::string filename);
 
         private:
         std::string root=R"( <svg/>)";

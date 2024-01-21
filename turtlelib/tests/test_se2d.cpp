@@ -112,18 +112,16 @@ TEST_CASE("Transform2D operator()", "[Transform2D_operator() vector]") {
     REQUIRE(almost_equal(v2.y, -2.0));
 }
 
-
-
-TEST_CASE("testing () operator for twist", "[twist()]"){ // Shail
+TEST_CASE("testing () operator for twist", "[twist()]"){ //Shail Dalal
         Twist2D twi{PI/2, 1.4, 1.1};
         Transform2D trans{Vector2D{2.2,3.3}, PI/2};
         twi = trans.operator()(twi);
         REQUIRE_THAT(twi.omega,
         Catch::Matchers::WithinAbs(PI/2, 0.1));
         REQUIRE_THAT(twi.x, 
-        Catch::Matchers::WithinAbs(2.4, 0.1));
-        // REQUIRE_THAT(twi.y, 
-        // Catch::Matchers::WithinAbs(-0.8, 0.1));
+        Catch::Matchers::WithinAbs(4.081, 0.1));
+        REQUIRE_THAT(twi.y, 
+        Catch::Matchers::WithinAbs(-2.057, 0.1));
     }
 
 

@@ -8,7 +8,7 @@ project(turtlelib)
 # That is defined to reference the library
 # here: we find the eigen library as per the instruction
 # https://eigen.tuxfamily.org/dox/TopicCMakeGuide.html
-find_package(Eigen3 3.3 REQUIRED)
+# find_package(Eigen3 3.3 REQUIRED)
 
 # Create a library.  Can specify if it is shared or static but usually
 # you don't need or want to.
@@ -41,14 +41,16 @@ target_compile_features(turtlelib PUBLIC cxx_std_17)
 # The Name of the executable creates a cmake "target"
 
 #TODO: uncomment the following line and replace Name with the name of your executable
-# add_executable(Name src/geometry.cpp)
+add_executable(frame_main src/frame_main.cpp)
+configure_file(${CMAKE_SOURCE_DIR}/exercises/B6_frame_input.txt frame_input.txt COPYONLY)
+target_link_libraries(frame_main turtlelib)
 
 # Use target_link_libraries to add dependencies to a "target"
 # (e.g., a library or executable)
 # This will automatically add all required library files
 # that need to be linked
 # and paths to th locations of header files
-target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
+# target_link_libraries(${PROJECT_NAME} Eigen3::Eigen)
 
 # install the include files by copying the whole include directory
 install(DIRECTORY include/turtlelib DESTINATION include)

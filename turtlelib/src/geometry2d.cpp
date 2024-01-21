@@ -67,5 +67,13 @@ std::istream & operator>>(std::istream & is, Vector2D & v){
     }
     return is;
 }
+
+Vector2D normalize_vector(const Vector2D & v)
+    {
+        Vector2D v1;
+        v1.x = v.x / sqrt(v.x * v.x + v.y * v.y);
+        v1.y = v.y / sqrt(v.x * v.x + v.y * v.y);
+        return v1;
+    }
 };
 
