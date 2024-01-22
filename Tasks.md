@@ -24,5 +24,5 @@
     - [x] Task C.4
     - [x] Task C.5
     - [x] Task C.6
-    - [ ] Task C.7
+    - [x] Task C.7
  

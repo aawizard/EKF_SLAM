@@ -1,4 +1,8 @@
-
+Worked with:
+ - Shail Dalal
+ - Demiana
+ - Abhishek
+ - Allan
 
 https://github.com/ros-visualization/rqt/issues/187   (qos)
 https://foxglove.dev/blog/how-to-use-ros2-parameters (list as a parameter)

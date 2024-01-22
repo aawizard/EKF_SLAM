@@ -1,3 +1,34 @@
+/// \file
+/// \brief This file contains the implementation of the nusim node
+///         Nusim node act as a simulator for the turtlebot3.
+///         It publishes the current time step and the current pose of the robot.
+///         It also provides a service to reset the time step and teleport the robot to a new pose.
+///         The arena for the robot is shown in rviz with walls and obstacles.
+///PARAMETERS:
+///     \param rate: the rate at which the time step is published [Hz]
+///     \param x0: the initial x position of the robot [m]
+///     \param y0: the initial y position of the robot [m]
+///     \param theta0: the initial orientation of the robot [rad]
+///     \param arena_x_length: the length of the arena in the x direction [m]
+///     \param arena_y_length: the length of the arena in the y direction [m]
+///     \param obstacles/x: the x positions of the obstacles [m]
+///     \param obstacles/y: the y positions of the obstacles [m]
+///     \param obstacles/radius: the radius of the obstacles [m]
+///PUBLISHES:
+///     \pub topic: ~/timestep [std_msgs::msg::UInt64] the current time step
+///     \pub topic: ~/walls [visualization_msgs::msg::MarkerArray] the walls of the arena
+///     \pub topic: ~/obstacles [visualization_msgs::msg::MarkerArray] the obstacles in the arena
+///SERVICES:
+///     \srv service: ~/reset [std_srvs::srv::Empty] resets the time step and teleports the robot to the initial pose
+///     \srv service: ~/teleport [nusim::srv::Teleport] teleports the robot to a new pose
+///SUBSCRIBES:
+///     None
+///CLIENTS:
+///     None
+///BROADCASTS:
+///     \broadcaster tf: red/base_footprint to nusim/world
+
+
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -18,6 +49,25 @@
 #include <rclcpp/qos.hpp>
 
 using namespace std::chrono_literals;
+
+
+
+
+/// \brief This class publishes the current timestep of the simulation, obstacles and walls that
+///        appear in Rviz as markers. The class has a timer_callback to continually update the
+///        simulation at each timestep. The reset service resets the simulation to the initial
+///        state thus restarting the simulation. A teleport service is available to teleport a
+///        turtlebot to any pose. A broadcaster broadcasts the robots TF frames to a topic for
+///        visualization in Rviz.
+/// \param rate: the rate at which the time step is published [Hz]
+/// \param x0: the initial x position of the robot [m]
+/// \param y0: the initial y position of the robot [m]
+/// \param theta0: the initial orientation of the robot [rad]
+/// \param arena_x_length: the length of the arena in the x direction [m]
+/// \param arena_y_length: the length of the arena in the y direction [m]
+/// \param obstacles/x: the x positions of the obstacles [m]
+/// \param obstacles/y: the y positions of the obstacles [m]
+/// \param obstacles/radius: the radius of the obstacles [m]
 class Nusim : public rclcpp::Node
 {
 public:
@@ -83,6 +133,7 @@ public:
   }
 
 private:
+  /// \brief callback for the reset service
   void reset_callback(
     const std::shared_ptr<std_srvs::srv::Empty::Request>,
     std::shared_ptr<std_srvs::srv::Empty::Response>)
@@ -91,7 +142,10 @@ private:
     change_position(0.0, 0.0, 0.0);
     RCLCPP_INFO(get_logger(), "Resetting count");
   }
-
+  /// \brief changes the position of the robot
+  /// \param x new x position of the robot
+  /// \param y new y position of the robot
+  /// \param theta new orientation of the robot
   void change_position(double x, double y, double theta)
   {
     x_ = x;
@@ -111,7 +165,9 @@ private:
     t.transform.rotation.w = q.w();
     // tf_broadcaster_->sendTransform(t);
   }
-
+  /// \brief callback for the teleport service to teleport the robot to a new pose
+  /// \param request [nusim/srv/Teleport/Request] the request for the service 
+  /// \param response [nusim/srv/Teleport/Response] the response for the service
   void teleport_callback(
     const std::shared_ptr<nusim::srv::Teleport::Request> request,
     std::shared_ptr<nusim::srv::Teleport::Response>)
@@ -122,7 +178,7 @@ private:
     RCLCPP_INFO(get_logger(), "Teleporting robot");
     change_position(x_, y_, theta_);
   }
-
+  /// \brief callback for the timer to publish the current time step
   void timer_callback()
   {
     auto message = std_msgs::msg::UInt64();
@@ -132,7 +188,7 @@ private:
     t.header.stamp = get_clock()->now();
     tf_broadcaster_->sendTransform(t);
   }
-
+  /// \brief creates a wall marker
   visualization_msgs::msg::Marker make_wall(int id, double scale[], const double pose[])
   {
     visualization_msgs::msg::Marker marker;
@@ -154,7 +210,7 @@ private:
     return marker;
 
   }
-
+  /// \brief creates an obstacle marker
   void make_obstacles()
   {
     auto obstacles = visualization_msgs::msg::MarkerArray();
@@ -183,7 +239,7 @@ private:
     }
     publisher_obstacles_->publish(obstacles);
   }
-
+  /// \brief creates a wall marker
   void show_walls()
   {
     auto walls = visualization_msgs::msg::MarkerArray();
