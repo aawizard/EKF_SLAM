@@ -15,18 +15,18 @@
 ///     \param obstacles/y: the y positions of the obstacles [m]
 ///     \param obstacles/radius: the radius of the obstacles [m]
 ///PUBLISHES:
-///     \pub topic: ~/timestep [std_msgs::msg::UInt64] the current time step
-///     \pub topic: ~/walls [visualization_msgs::msg::MarkerArray] the walls of the arena
-///     \pub topic: ~/obstacles [visualization_msgs::msg::MarkerArray] the obstacles in the arena
+///     pub topic: ~/timestep [std_msgs::msg::UInt64] the current time step
+///     pub topic: ~/walls [visualization_msgs::msg::MarkerArray] the walls of the arena
+///     pub topic: ~/obstacles [visualization_msgs::msg::MarkerArray] the obstacles in the arena
 ///SERVICES:
-///     \srv service: ~/reset [std_srvs::srv::Empty] resets the time step and teleports the robot to the initial pose
-///     \srv service: ~/teleport [nusim::srv::Teleport] teleports the robot to a new pose
+///     srv service: ~/reset [std_srvs::srv::Empty] resets the time step and teleports the robot to the initial pose
+///     srv service: ~/teleport [nusim::srv::Teleport] teleports the robot to a new pose
 ///SUBSCRIBES:
 ///     None
 ///CLIENTS:
 ///     None
 ///BROADCASTS:
-///     \broadcaster tf: red/base_footprint to nusim/world
+///     broadcaster tf: red/base_footprint to nusim/world
 
 
 #include <chrono>
@@ -49,8 +49,6 @@
 #include <rclcpp/qos.hpp>
 
 using namespace std::chrono_literals;
-
-
 
 
 /// \brief This class publishes the current timestep of the simulation, obstacles and walls that
@@ -117,9 +115,12 @@ public:
 
     //setting values of x,y,z
 
-    x_ = get_parameter("x0").as_double();
-    y_ = get_parameter("y0").as_double();
-    theta_ = get_parameter("theta0").as_double();
+    x0_ = get_parameter("x0").as_double();
+    y0_ = get_parameter("y0").as_double();
+    theta0_ = get_parameter("theta0").as_double();
+    x_ = x0_;
+    y_ = y0_;
+    theta_ = theta0_;
     arena_x_length_ = get_parameter("arena_x_length").as_double();
     arena_y_length_ = get_parameter("arena_y_length").as_double();
     obstacle_x_ = get_parameter("obstacles/x").as_double_array();
@@ -139,7 +140,7 @@ private:
     std::shared_ptr<std_srvs::srv::Empty::Response>)
   {
     count_ = 0;
-    change_position(0.0, 0.0, 0.0);
+    change_position(x0_, y0_, theta0_);
     RCLCPP_INFO(get_logger(), "Resetting count");
   }
   /// \brief changes the position of the robot
@@ -166,7 +167,7 @@ private:
     // tf_broadcaster_->sendTransform(t);
   }
   /// \brief callback for the teleport service to teleport the robot to a new pose
-  /// \param request [nusim/srv/Teleport/Request] the request for the service 
+  /// \param request [nusim/srv/Teleport/Request] the request for the service
   /// \param response [nusim/srv/Teleport/Response] the response for the service
   void teleport_callback(
     const std::shared_ptr<nusim::srv::Teleport::Request> request,
@@ -285,6 +286,9 @@ private:
   double x_ = 0.0;
   double y_ = 0.0;
   double theta_ = 0.0;
+  double x0_ = 0.0;
+  double y0_ = 0.0;
+  double theta0_ = 0.0;
   double wall_height = 0.25;
   double wall_thickness = 0.10;
   double arena_x_length_ = 1.0;
@@ -297,6 +301,10 @@ private:
 
 };
 
+/// @brief    main function for the nusim node
+/// @param argc
+/// @param argv
+/// @return
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);

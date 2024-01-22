@@ -8,4 +8,4 @@ https://github.com/ros-visualization/rqt/issues/187   (qos)
 https://foxglove.dev/blog/how-to-use-ros2-parameters (list as a parameter)
 https://docs.ros2.org/bouncy/api/rclcpp/classrclcpp_1_1_parameter.html (convert parameter to array)
 
-Task B - CMakeList (Allan)
+ChatGPT: https://chat.openai.com/share/24afed67-c025-43b8-9504-025b23879347
