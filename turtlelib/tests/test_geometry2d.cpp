@@ -2,6 +2,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include"turtlelib/geometry2d.hpp"
 #include<sstream>
+#include<cmath>
 using namespace turtlelib;
 
 TEST_CASE("Test  Normalized angles", "[normalize_angle]"){
@@ -92,3 +93,69 @@ TEST_CASE("Test normalize_vector", "[normalize_vector]"){
     REQUIRE_THAT(v1.y,
         Catch::Matchers::WithinAbs(0.8, 0.1));
 }
+
+TEST_CASE("Test operator -=","[operator-= vector]"){
+    Vector2D v{1.0,2.0};
+    Vector2D v1{3.0,4.0};
+    v1 -= v;
+    REQUIRE(v1.x == 2.0);
+    REQUIRE(v1.y == 2.0);
+}
+
+TEST_CASE("Test operator +=","[operator+= vector]"){
+    Vector2D v{1.0,2.0};
+    Vector2D v1{3.0,4.0};
+    v1 += v;
+    REQUIRE(v1.x == 4.0);
+    REQUIRE(v1.y == 6.0);
+}
+
+TEST_CASE("Test operator *=","[operator*= vector]"){
+    Vector2D v{1.0,2.0};
+    v *= 2;
+    REQUIRE(v.x == 2.0);
+    REQUIRE(v.y == 4.0);
+}
+
+TEST_CASE("Test operator -","[operator- vector]"){
+    Vector2D v{1.0,2.0};
+    Vector2D v1{3.0,4.0};
+    Vector2D v2 = v1 - v;
+    REQUIRE(v2.x == 2.0);
+    REQUIRE(v2.y == 2.0);
+}
+
+TEST_CASE("Test operator +","[operator+ vector]"){
+    Vector2D v{1.0,2.0};
+    Vector2D v1{3.0,4.0};
+    Vector2D v2 = v1 + v;
+    REQUIRE(v2.x == 4.0);
+    REQUIRE(v2.y == 6.0);
+}
+
+TEST_CASE("Test operator *","[operator* vector]"){
+    Vector2D v{1.0,2.0};
+    Vector2D v1 = v * 2;
+    REQUIRE(v1.x == 2.0);
+    REQUIRE(v1.y == 4.0);
+}
+
+TEST_CASE("Test dot","[dot vector]"){
+    Vector2D v{1.0,2.0};
+    Vector2D v1{3.0,4.0};
+    double d = dot(v,v1);
+    REQUIRE(d == 11.0);
+}
+
+TEST_CASE("Test magnitude","[magnitude vector]"){
+    Vector2D v{1.0,2.0};
+    double d = magnitude(v);
+    REQUIRE(d == sqrt(5.0));
+}
+TEST_CASE("Test angle","[angle vector]"){
+    Vector2D v{1.0,2.0};
+    Vector2D v1{3.0,4.0};
+    double d = angle(v,v1);
+    REQUIRE(d == 0.17985349979247847);
+}
+

@@ -75,5 +75,57 @@ Vector2D normalize_vector(const Vector2D & v)
         v1.y = v.y / sqrt(v.x * v.x + v.y * v.y);
         return v1;
     }
+
+
+Vector2D operator-(Vector2D & v1, const Vector2D & v2){
+    v1 -= v2;
+    return v1;
+}
+
+
+Vector2D & Vector2D::operator-=(const Vector2D & v){
+    x -= v.x;
+    y -= v.y;
+    return *this;
+}
+
+
+Vector2D operator+(Vector2D & v1, const Vector2D & v2){
+    v1 += v2;
+    return v1;
+}
+
+
+Vector2D & Vector2D::operator+=(const Vector2D & v){
+    x += v.x;
+    y += v.y;
+    return *this;
+}
+
+
+Vector2D operator*(Vector2D & v1, double d){
+    v1 *= d;
+    return v1;
+}
+
+Vector2D & Vector2D::operator*=(const double d){
+    x *= d;
+    y *= d;
+    return *this;
+}
+
+
+double dot(Vector2D v1, Vector2D v2){
+    return v1.x * v2.x + v1.y * v2.y;
+}
+
+
+double magnitude(Vector2D v){
+    return sqrt(v.x * v.x + v.y * v.y);
+}
+
+double angle(Vector2D v1,Vector2D v2){
+    return acos(dot(v1,v2)/(magnitude(v1)*magnitude(v2)));
+}
 };
 

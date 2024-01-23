@@ -89,6 +89,21 @@ namespace turtlelib
 
         /// \brief the y coordinate
         double y = 0.0;
+
+        /// @brief Vector subtraction
+        /// @param v Vector to subtract
+        /// @return difference of vector object and v
+        Vector2D & operator-=(const Vector2D & v);
+
+        /// @brief Vector addition
+        /// @param v Vector to add
+        /// @return sum of vector object and v
+        Vector2D & operator+=(const Vector2D & v);
+
+        /// @brief Vector scaling
+        /// @param d Scalar to multiply by
+        /// @return v scaled by d
+        Vector2D & operator*=( const double d);
     };
 
     /// \brief Subtracting one point from another yields a vector
@@ -133,6 +148,42 @@ namespace turtlelib
     /// \brief normalize a vector
     /// \param v - the vector to normalize
     Vector2D normalize_vector(const Vector2D & v);
+
+
+    /// @brief Vector subtraction
+    /// @param v1 Vector to subtract from
+    /// @param v2 Vector to subtract
+    /// @return difference of v1 and v2
+    Vector2D operator-(Vector2D & v1, const Vector2D & v2);
+
+    /// @brief Vector addition
+    /// @param v1 Vector to add to
+    /// @param v2 Vector to add
+    /// @return sum of v1 and v2
+    Vector2D operator+(Vector2D & v1, const Vector2D & v2);
+
+    /// @brief Vector scaling
+    /// @param v1 Vector to scale
+    /// @param d Scalar to multiply by
+    /// @return v1 scaled by d
+    Vector2D operator*(Vector2D & v1, double d);
+
+    /// @brief Vector dot product
+    /// @param v1 Vector to dot with
+    /// @param v2 Vector to dot with
+    /// @return dot product of v1 and v2
+    double dot(Vector2D v1, Vector2D v2);
+
+    /// @brief Vector magnitude
+    /// @param v Vector to find magnitude of
+    /// @return magnitude of v
+    double magnitude(Vector2D v);
+
+    /// @brief Find angle between two vectors
+    /// @param v1 Vector to find angle from
+    /// @param v2 Vector to find angle to
+    /// @return angle between v1 and v2
+    double angle(Vector2D v1,Vector2D v2);
 }
 
 #endif
