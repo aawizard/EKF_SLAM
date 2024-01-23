@@ -3,6 +3,7 @@
 #include"turtlelib/geometry2d.hpp"
 #include"turtlelib/se2d.hpp"
 #include<sstream>
+#include<cmath>
 // #include <catch2/catch.hpp>
 
 
@@ -183,3 +184,41 @@ TEST_CASE("Test operator>>", "[operator>> Transform2D]"){
     REQUIRE(t.translation().y == 2.2);
 }
 
+TEST_CASE("Test integrate_twist", "[integrate_twist]"){
+    Twist2D tw;
+    tw.omega = PI/2;
+    Transform2D tf = integrate_twist(tw);
+    REQUIRE(tf.rotation() == PI/2);
+    REQUIRE(tf.translation().x == 0.0);
+    REQUIRE(tf.translation().y == 0.0);
+
+    Twist2D tw1;
+    tw1.x = 1.0;
+    tw1.y = 2.0;
+    Transform2D tf1 = integrate_twist(tw1);
+    REQUIRE(tf1.translation().x == 1.0);
+    REQUIRE(tf1.translation().y == 2.0);
+    REQUIRE(tf1.rotation() == 0.0);
+
+    Twist2D tw2;
+    tw2.omega = PI/2;
+    tw2.x = 2.0;
+    tw2.y = -2.0;
+    Transform2D tf2 = integrate_twist(tw2);
+    REQUIRE(tf2.rotation() == PI/2);
+    REQUIRE_THAT(tf2.translation().x,
+        Catch::Matchers::WithinAbs(2.0,0.1));
+    REQUIRE_THAT(tf2.translation().y,
+        Catch::Matchers::WithinAbs(2,0.1));
+
+    Twist2D tw3;
+    tw3.omega = PI/4;
+    tw3.x = 2.0;
+    tw3.y = 2.0;
+    Transform2D tf3 = integrate_twist(tw3);
+    REQUIRE(tf3.rotation() == PI/4);
+    REQUIRE_THAT(tf3.translation().x,
+        Catch::Matchers::WithinAbs(0.0,0.1));
+    REQUIRE_THAT(tf3.translation().y,
+        Catch::Matchers::WithinAbs(2*sqrt(2),0.1));
+}

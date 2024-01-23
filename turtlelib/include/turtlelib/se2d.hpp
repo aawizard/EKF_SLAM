@@ -92,6 +92,7 @@ namespace turtlelib
         /// \return the angular displacement, in radians
         double rotation() const;
 
+
         /// \brief \see operator<<(...) (declared outside this class)
         /// for a description
         friend std::ostream & operator<<(std::ostream & os, const Transform2D & tf);
@@ -120,6 +121,12 @@ namespace turtlelib
     /// \return the composition of the two transforms
     /// HINT: This function should be implemented in terms of *=
     Transform2D operator*(Transform2D lhs, const Transform2D & rhs);
+
+    /// \brief transformation corresponding to a rigid body following a constant twist 
+    /// for one unit of time
+    /// \param v - the constant twist
+    /// \return the transform corresponding to the rigid body's motion for 1 second
+    Transform2D integrate_twist(Twist2D v);
 
 
 }

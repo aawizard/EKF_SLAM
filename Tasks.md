@@ -17,7 +17,7 @@
     - [x] Task B.6
     - [x] Task B.7
     - [x] Task B.8
-    - [ ] Task B.9
+    - [x] Task B.9
     
 
 - [ ] The Simulator - Task C
