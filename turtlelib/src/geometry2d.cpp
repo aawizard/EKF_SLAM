@@ -108,12 +108,16 @@ Vector2D operator*(Vector2D & v1, double d){
     return v1;
 }
 
+Vector2D operator*(double d, Vector2D & v1){
+    v1 *= d;
+    return v1;
+}
+
 Vector2D & Vector2D::operator*=(const double d){
     x *= d;
     y *= d;
     return *this;
 }
-
 
 double dot(Vector2D v1, Vector2D v2){
     return v1.x * v2.x + v1.y * v2.y;

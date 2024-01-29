@@ -140,6 +140,14 @@ TEST_CASE("Test operator *","[operator* vector]"){
     REQUIRE(v1.y == 4.0);
 }
 
+TEST_CASE("Test operator *","[operator* vector1]"){
+    Vector2D v{1.0,2.0};
+    Vector2D v1 = 2 * v;
+    REQUIRE(v1.x == 2.0);
+    REQUIRE(v1.y == 4.0);
+}
+
+
 TEST_CASE("Test dot","[dot vector]"){
     Vector2D v{1.0,2.0};
     Vector2D v1{3.0,4.0};

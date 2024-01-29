@@ -168,6 +168,12 @@ namespace turtlelib
     /// @return v1 scaled by d
     Vector2D operator*(Vector2D & v1, double d);
 
+    /// @brief Vector scaling
+    /// @param d Scalar to multiply by
+    /// @param v1 Vector to scale
+    /// @return v1 scaled by d
+    Vector2D operator*(double d, Vector2D & v1);
+
     /// @brief Vector dot product
     /// @param v1 Vector to dot with
     /// @param v2 Vector to dot with

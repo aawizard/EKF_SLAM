@@ -129,11 +129,18 @@ namespace turtlelib {
 
     Transform2D integrate_twist(Twist2D v){
         //Trandform of the body in one unit time (s)
-        Transform2D t(v.omega);
-        Vector2D p{v.x,v.y};
-        Vector2D p1 = t(p);
-        Transform2D t1(Vector2D{p1.x,p1.y},v.omega);
-        return t1;
+        if (abs(v.omega) < 0.0001){
+            Transform2D t({v.x,v.y},v.omega);
+
+            return t;
+            }
+        else{
+            Transform2D Tsb({v.y/v.omega,-v.x/v.omega},0.0);
+            Transform2D Tss_({0,0},v.omega);
+            Transform2D Tbs = Tsb.inv();
+            Transform2D Tbb_ = Tbs * Tss_ * Tsb;
+            return Tbb_;
+        }
     }
 };
 
