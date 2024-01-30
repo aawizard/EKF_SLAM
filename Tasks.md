@@ -31,8 +31,8 @@
     - [ ] Task C.8
 
 - [ ] The Simulator - Task D
-    - [ ] Task D.1
-    - [ ] Task D.2
+    - [x] Task D.1
+    - [x] Task D.2
     - [ ] Task D.3
  
 - [ ] The Simulator - Task E
