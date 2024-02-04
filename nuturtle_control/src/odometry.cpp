@@ -1,38 +1,44 @@
 /// \file odometry.cpp
-/// \brief TODO: Fill in the documentation for this file
+/// \brief Subscribes to joint states and publishes odometry of the robot
 ///
 ///PARAMETERS:
 ///    \param body_id (string): body id of the robot
 ///    \param odom_id (string): odometry id of the robot
 ///    \param wheel_left (string): left wheel joint name
 ///    \param wheel_right (string): right wheel joint name
+///    \param wheel_radius (double): radius of the wheels[m]
+///    \param track_width (double): distance between the wheels[m]
 ///PUBLISHES:
-///    \param wheel_cmd (nuturtlebot_msgs::msg::WheelCommands): Wheel commands to execute
-///    \param joint_states (sensor_msgs::msg::JointState): Joint states of the robot
-
+///    \param odom (nav_msgs::msg::Odometry): odometry of the robot
+///SUBSCRIBES:
+///    \param joint_states (sensor_msgs::msg::JointState): joint states of the robot
+///SERVICES:
+///    \param initial_pose (nuturtle_control::srv::InitConfig): set initial pose of the robot
 
 #include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
 #include "geometry_msgs/msg/twist.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/msg/odometry.hpp"
-#include "nuturtlebot_msgs/msg/wheel_commands.hpp"
-#include "nuturtlebot_msgs/msg/sensor_data.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_ros/transform_broadcaster.h"
 #include "sensor_msgs/msg/joint_state.hpp"
-// #include "turtlelib/se2d.hpp"
-// #include "turtlelib/geometry.hpp"
+#include "nuturtle_control/srv/init_config.hpp"
 #include "turtlelib/diff_drive.hpp"
 
 using namespace std::chrono_literals;
 // using namespace turtlelib;
 
-/// \brief TODO: Fill in the documentation for this class
+/// \brief subscribes to joint states and publishes odometry of the robot
 /// \param body_id - body id of the robot
 /// \param odom_id - odometry id of the robot
 /// \param wheel_left - left wheel joint name
 /// \param wheel_right - right wheel joint name
+/// \param wheel_radius - radius of the wheels[m]
+/// \param track_width - distance between the wheels[m]
 class Odometry : public rclcpp::Node
 {
 public:
@@ -43,11 +49,15 @@ public:
     declare_parameter("odom_id", "odom");
     declare_parameter("wheel_left", "");
     declare_parameter("wheel_right", "");
+    declare_parameter("wheel_radius", -1.0);
+    declare_parameter("track_width", -1.0);
 
     body_id = get_parameter("body_id").as_string();
     odom_id = get_parameter("odom_id").as_string();
     wheel_left = get_parameter("wheel_left").as_string();
     wheel_right = get_parameter("wheel_right").as_string();
+    wheel_radius = get_parameter("wheel_radius").as_double();
+    track_width = get_parameter("track_width").as_double();
 
     if (body_id == "") {
       RCLCPP_ERROR_STREAM(get_logger(), "body_id not set");
@@ -61,79 +71,79 @@ public:
       RCLCPP_ERROR_STREAM(get_logger(), "wheel_right not set");
       // exit(-1);
     }
+
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+
     sub_joint_state_ = create_subscription<sensor_msgs::msg::JointState>(
       "joint_states", 10, std::bind(&Odometry::joint_state_callback, this, std::placeholders::_1));
-    // sub_sensor_ = create_subscription<nuturtlebot_msgs::msg::SensorData>(
-    //   "sensor_data", 10, std::bind(&Odometry::sensor_callback, this, std::placeholders::_1));
 
-    // pub_wheel_ = create_publisher<nuturtlebot_msgs::msg::WheelCommands>("wheel_cmd", 10);
-    // pub_joint_ = create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
+    pub_odom_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
 
-    // robot.initilize(track_width, wheel_radius, turtlelib::Transform2D());
-    // joint_state.header.stamp = this->get_clock()->now();
-    // joint_state.name = {"left_wheel_joint", "right_wheel_joint"};
+    init_config_service = this->create_service<nuturtle_control::srv::InitConfig>(
+      "~/initial_pose", std::bind(
+        &Odometry::init_pose_callback, this,
+        std::placeholders::_1, std::placeholders::_2));
+
     odom.header.frame_id = odom_id;
     odom.child_frame_id = body_id;
     odom.header.stamp = this->get_clock()->now();
+    robot.initilize(track_width, wheel_radius, turtlelib::Transform2D());
+    odom_tf_.header.frame_id = odom_id;
+    odom_tf_.child_frame_id = body_id;
+    odom_tf_.header.stamp = this->get_clock()->now();
   }
 
 private:
-    void joint_state_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
-    { 
-        auto left_wheel_joint = msg->position[0];
-        auto right_wheel_joint = msg->position[1];
-    }
+  void joint_state_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
+  {
+    turtlelib::Wheel_state wheel_vels;
+    wheel_vels.phi_l = msg->position[0] - robot.get_wheel_pos().phi_l;
+    wheel_vels.phi_r = msg->position[1] - robot.get_wheel_pos().phi_r;
+    turtlelib::Twist2D twist = robot.Twist(wheel_vels);
+    robot.forward_kinematics(wheel_vels);
+    turtlelib::Transform2D Tsb_ = robot.get_robot_pos();
+    odom.pose.pose.position.x = Tsb_.translation().x;
+    odom.pose.pose.position.y = Tsb_.translation().y;
+    tf2::Quaternion q;
+    q.setRPY(0, 0, Tsb_.rotation());
+    odom.pose.pose.orientation.x = q.x();
+    odom.pose.pose.orientation.y = q.y();
+    odom.pose.pose.orientation.z = q.z();
+    odom.pose.pose.orientation.w = q.w();
 
-//   void twist_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
-//   {
-//     turtlelib::Twist2D twist{msg->angular.z, msg->linear.x, msg->linear.y};
-//     turtlelib::Wheel_state wheel_vels = robot.inverse_kinematics(twist);
-
-//     //Diffdrive claculation
-//     nuturtlebot_msgs::msg::WheelCommands wheel_cmd;
-//     wheel_cmd.left_velocity = wheel_vels.phi_l / motor_cmd_per_rad_sec;
-//     wheel_cmd.right_velocity = wheel_vels.phi_r / motor_cmd_per_rad_sec;
-
-//     if (wheel_cmd.left_velocity > motor_cmd_max) {
-//       wheel_cmd.left_velocity = motor_cmd_max;
-//     } else if (wheel_cmd.left_velocity < -motor_cmd_max) {
-//       wheel_cmd.left_velocity = -motor_cmd_max;
-//     }
-//     if (wheel_cmd.right_velocity > motor_cmd_max) {
-//       wheel_cmd.right_velocity = motor_cmd_max;
-//     } else if (wheel_cmd.right_velocity < -motor_cmd_max) {
-//       wheel_cmd.right_velocity = -motor_cmd_max;
-//     }
-//     pub_wheel_->publish(wheel_cmd);
-//   }
-//   void sensor_callback(const nuturtlebot_msgs::msg::SensorData::SharedPtr msg)
-//   {
-//     double left_wheel_joint = msg->left_encoder / encoder_ticks_per_rev;
-//     double right_wheel_joint = msg->right_encoder / encoder_ticks_per_rev;
-//     auto del_t = msg->stamp.sec + msg->stamp.nanosec * 1e-9 - joint_state.header.stamp.sec -
-//       joint_state.header.stamp.nanosec * 1e-9;
-//     double left_wheel_velocity = (left_wheel_joint - joint_state.position[0]) / del_t;
-//     double right_wheel_velocity = (right_wheel_joint - joint_state.position[1]) / del_t;
-//     //JointState calculation
-//     joint_state.header.stamp = this->get_clock()->now();
-//     joint_state.position = {left_wheel_joint, right_wheel_joint};
-//     joint_state.velocity = {left_wheel_velocity, right_wheel_velocity};
-//     pub_joint_->publish(joint_state);
-//   }
-
+    odom.twist.twist.linear.x = twist.x;
+    odom.twist.twist.angular.z = twist.omega;
+    pub_odom_->publish(odom);
+    odom_tf_.transform.translation.x = Tsb_.translation().x;
+    odom_tf_.transform.translation.y = Tsb_.translation().y;
+    odom_tf_.transform.rotation.x = q.x();
+    odom_tf_.transform.rotation.y = q.y();
+    odom_tf_.transform.rotation.z = q.z();
+    odom_tf_.transform.rotation.w = q.w();
+    tf_broadcaster_->sendTransform(odom_tf_);
+  }
+  void init_pose_callback(
+    const std::shared_ptr<nuturtle_control::srv::InitConfig::Request> request,
+    std::shared_ptr<nuturtle_control::srv::InitConfig::Response> response)
+  {
+    turtlelib::Transform2D Tsb({request->x, request->y}, request->theta);
+    robot.set_pos(Tsb);
+    response->success = true;
+  }
   std::string body_id = "";
   std::string odom_id = "";
   std::string wheel_left = "";
   std::string wheel_right = "";
+  double wheel_radius = 0.0;
+  double track_width = 0.0;
   nav_msgs::msg::Odometry odom;
-//   turtlelib::Diff_drive robot;
-//   turtlelib::Wheel_state wheel_state;
-//   sensor_msgs::msg::JointState joint_state;
+  turtlelib::Diff_drive robot;
+  geometry_msgs::msg::TransformStamped odom_tf_;
 
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_joint_state_;
-//   rclcpp::Subscription<nuturtlebot_msgs::msg::SensorData>::SharedPtr sub_sensor_;
-//   rclcpp::Publisher<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr pub_wheel_;
-//   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr pub_joint_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
+  rclcpp::Service<nuturtle_control::srv::InitConfig>::SharedPtr init_config_service;
 
 };
 

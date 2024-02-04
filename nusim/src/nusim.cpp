@@ -43,7 +43,6 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include <tf2_ros/transform_broadcaster.h>
 #include "nusim/srv/teleport.hpp"
-
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <rclcpp/qos.hpp>

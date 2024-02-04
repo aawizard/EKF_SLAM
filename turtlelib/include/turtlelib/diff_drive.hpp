@@ -53,6 +53,10 @@ namespace turtlelib
         /// \brief Forward kinematics of a diffrential drive robot.
         /// \param wheel_vels - the wheel velocities.
         void forward_kinematics(Wheel_state wheel_vels);
+
+        /// \brief Set the robot position.
+        /// \param robot_pos_ - the robot position.
+        void set_pos(Transform2D robot_pos_);
         
         /// \brief Inverse kinematics of a diffrential drive robot.
         /// \param twist - the twist to be applied.

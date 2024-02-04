@@ -42,6 +42,11 @@ namespace turtlelib
         wheel_state.phi_r = 0.0;
     }
 
+    void Diff_drive::set_pos(Transform2D robot_pos_)
+    {
+        robot_pos = robot_pos_;
+    }
+
     Twist2D Diff_drive::Twist(Wheel_state wheel_vels)
     {
         // Equation 13.34 from Modern Robotics
