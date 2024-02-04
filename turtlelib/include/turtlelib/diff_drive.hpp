@@ -27,6 +27,9 @@ namespace turtlelib
     
     public:
         /// \brief Default constructor.
+        Diff_drive();
+
+        /// \brief Default constructor.
         /// \param wheel_track_ - distance between the wheels.
         /// \param wheel_radius_ - radius of the wheels.
         /// \param robot_pos_ - robot position, defaults to (0,0,0).
@@ -36,6 +39,12 @@ namespace turtlelib
         /// \param wheel_track_ - distance between the wheels.
         /// \param wheel_radius_ - radius of the wheels.
         Diff_drive(double wheel_track_, double wheel_radius_);
+
+        /// \brief Initialize the diffrential drive robot.
+        /// \param wheel_track_ - distance between the wheels.
+        /// \param wheel_radius_ - radius of the wheels.
+        /// \param robot_pos_ - robot position.
+        void initilize(double wheel_track_, double wheel_radius_, Transform2D robot_pos_);
 
         /// \brief Forward kinematics of a diffrential drive robot.
         /// \param wheel_vels - the wheel velocities.

@@ -7,36 +7,31 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(nuturtlebot_msgs REQUIRED)
+find_package(turtlelib REQUIRED)
+find_package(sensor_msgs REQUIRED)
 # find_package(std_msgs REQUIRED)
 # find_package(std_srvs REQUIRED)
 # find_package(tf2 REQUIRED)
 # find_package(tf2_ros REQUIRED)
-# find_package(rosidl_default_generators REQUIRED)
-# find_package(visualization_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
-# rosidl_generate_interfaces(${PROJECT_NAME}_srv
 
-#   # "srv/Teleport.srv"
-#   LIBRARY_NAME ${PROJECT_NAME}
-#   #DEPENDENCIES geometry_msgs # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
-# )
+find_package(rosidl_default_generators REQUIRED)
+add_executable(turtle_control src/turtle_control.cpp)
 
-# rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
+ament_target_dependencies(turtle_control rclcpp geometry_msgs turtlelib nuturtlebot_msgs sensor_msgs)
+target_link_libraries(turtle_control turtlelib::turtlelib ${cpp_typesupport_target})
+install(TARGETS
+  turtle_control
+  DESTINATION lib/${PROJECT_NAME})
 
-add_executable(nusim_control src/turtle_control.cpp)
-
-ament_target_dependencies(nusim_control rclcpp)
-# target_link_libraries(nuturtle_control ${cpp_typesupport_target})
-# install(TARGETS
-#   nuturtle_control
-#   DESTINATION lib/${PROJECT_NAME})
-
-# install(DIRECTORY
-#   # launch
-#   # srv
-#   # config
-#   DESTINATION share/${PROJECT_NAME}/
-# )
+install(DIRECTORY
+  # launch
+  # srv
+  # config
+  DESTINATION share/${PROJECT_NAME}/
+)
 
 
 if(BUILD_TESTING)

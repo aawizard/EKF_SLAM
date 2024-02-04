@@ -7,6 +7,24 @@
 namespace turtlelib
 {
 
+    Diff_drive::Diff_drive()
+    {
+        wheel_track = 0.16;
+        wheel_radius = 0.033;
+        robot_pos = Transform2D();
+        wheel_state.phi_l = 0.0;
+        wheel_state.phi_r = 0.0;
+    }
+
+    void Diff_drive::initilize(double wheel_track_, double wheel_radius_, Transform2D robot_pos_)
+    {
+        wheel_track = wheel_track_;
+        wheel_radius = wheel_radius_;
+        robot_pos = robot_pos_;
+        wheel_state.phi_l = 0.0;
+        wheel_state.phi_r = 0.0;        
+    }
+
     Diff_drive::Diff_drive(double wheel_track_, double wheel_radius_, Transform2D robot_pos_)
     {
         wheel_track = wheel_track_;
@@ -24,10 +42,10 @@ namespace turtlelib
         wheel_state.phi_r = 0.0;
     }
 
-    void Diff_drive::forward_kinematics(Wheel_state wheel_vels)
+    void Diff_drive::forward_kinematics(Wheel_state new_wheel_state)
     {
-        wheel_state.phi_r += wheel_vels.phi_r;
-        wheel_state.phi_l += wheel_vels.phi_l;
+        Wheel_state wheel_vels = {new_wheel_state.phi_r - wheel_state.phi_r, new_wheel_state.phi_l - wheel_state.phi_l};
+        
 
         Twist2D twist;
         // Formulas from the notes: eq 3
@@ -36,9 +54,11 @@ namespace turtlelib
         twist.y = (wheel_radius/2)*sin(robot_pos.rotation())*(wheel_vels.phi_r + wheel_vels.phi_l);
         Transform2D Tbb_ = integrate_twist(twist);
         robot_pos *= Tbb_;
+        wheel_state.phi_r = new_wheel_state.phi_r;
+        wheel_state.phi_l = new_wheel_state.phi_l;
     }
 
-    Wheel_state Diff_drive::inverse_kinematics(Twist2D twist)
+    Wheel_state Diff_drive::inverse_kinematics(Twist2D twist) 
     {
         if (almost_equal(twist.y,0)){
             Wheel_state wheel_vels;

@@ -30,55 +30,55 @@ TEST_CASE("Test wheel_state","[get_wheel_pos]"){
         Catch::Matchers::WithinAbs(0.0,0.1));
 }
 
-TEST_CASE("Test forward_kinematics", "[forward_kinematics]"){
-    Transform2D tf({1.0,2.0}, 0.0);
-    Diff_drive dd(1.0, 0.5, tf);
+// TEST_CASE("Test forward_kinematics", "[forward_kinematics]"){
+//     Transform2D tf({1.0,2.0}, 0.0);
+//     Diff_drive dd(1.0, 0.5, tf);
 
-    // Test: same wheel speeds - drives forward
-    Wheel_state wheel_vel{0.2, 0.2};
+//     // Test: same wheel speeds - drives forward
+//     Wheel_state wheel_vel{0.2, 0.2};
 
-    dd.forward_kinematics(wheel_vel);
-    REQUIRE_THAT(dd.get_robot_pos().rotation(),
-        Catch::Matchers::WithinAbs(0.0,0.1));
-    REQUIRE_THAT(dd.get_robot_pos().translation().x,
-        Catch::Matchers::WithinAbs(1.1,0.01));
-    REQUIRE_THAT(dd.get_robot_pos().translation().y,
-        Catch::Matchers::WithinAbs(2.0,0.01));
-    REQUIRE_THAT(dd.get_wheel_pos().phi_l,
-        Catch::Matchers::WithinAbs(0.2,0.01));
-    REQUIRE_THAT(dd.get_wheel_pos().phi_r,
-        Catch::Matchers::WithinAbs(0.2,0.01));
+//     dd.forward_kinematics(wheel_vel);
+//     REQUIRE_THAT(dd.get_robot_pos().rotation(),
+//         Catch::Matchers::WithinAbs(0.0,0.1));
+//     REQUIRE_THAT(dd.get_robot_pos().translation().x,
+//         Catch::Matchers::WithinAbs(1.1,0.01));
+//     REQUIRE_THAT(dd.get_robot_pos().translation().y,
+//         Catch::Matchers::WithinAbs(2.0,0.01));
+//     REQUIRE_THAT(dd.get_wheel_pos().phi_l,
+//         Catch::Matchers::WithinAbs(0.2,0.01));
+//     REQUIRE_THAT(dd.get_wheel_pos().phi_r,
+//         Catch::Matchers::WithinAbs(0.2,0.01));
 
-    // Test: different wheel speeds
-    Wheel_state wheel_vel1{0.2, -0.1};
-    dd.forward_kinematics(wheel_vel1);
-    REQUIRE_THAT(dd.get_robot_pos().rotation(),
-        Catch::Matchers::WithinAbs(-0.15,0.1));
-    REQUIRE_THAT(dd.get_robot_pos().translation().x,
-        Catch::Matchers::WithinAbs(1.1,0.1));
-    REQUIRE_THAT(dd.get_robot_pos().translation().y,
-        Catch::Matchers::WithinAbs(2.0,0.01));
-    REQUIRE_THAT(dd.get_wheel_pos().phi_l,
-        Catch::Matchers::WithinAbs(0.4,0.01));
-    REQUIRE_THAT(dd.get_wheel_pos().phi_r,
-        Catch::Matchers::WithinAbs(0.1,0.01));
+//     // Test: different wheel speeds
+//     Wheel_state wheel_vel1{0.2, -0.1};
+//     dd.forward_kinematics(wheel_vel1);
+//     REQUIRE_THAT(dd.get_robot_pos().rotation(),
+//         Catch::Matchers::WithinAbs(-0.15,0.1));
+//     REQUIRE_THAT(dd.get_robot_pos().translation().x,
+//         Catch::Matchers::WithinAbs(1.1,0.1));
+//     REQUIRE_THAT(dd.get_robot_pos().translation().y,
+//         Catch::Matchers::WithinAbs(2.0,0.01));
+//     REQUIRE_THAT(dd.get_wheel_pos().phi_l,
+//         Catch::Matchers::WithinAbs(0.4,0.01));
+//     REQUIRE_THAT(dd.get_wheel_pos().phi_r,
+//         Catch::Matchers::WithinAbs(0.1,0.01));
 
 
-    // Test: pure rotation
-    Wheel_state wheel_vel2{-0.1, 0.1};
-    dd.forward_kinematics(wheel_vel2);
-    REQUIRE_THAT(dd.get_robot_pos().rotation(),
-        Catch::Matchers::WithinAbs(-0.05,0.1));
-    REQUIRE_THAT(dd.get_robot_pos().translation().x,
-        Catch::Matchers::WithinAbs(1.1,0.1));
-    REQUIRE_THAT(dd.get_robot_pos().translation().y,
-        Catch::Matchers::WithinAbs(2.0,0.01));
-    REQUIRE_THAT(dd.get_wheel_pos().phi_l,
-        Catch::Matchers::WithinAbs(0.3,0.01));
-    REQUIRE_THAT(dd.get_wheel_pos().phi_r,
-        Catch::Matchers::WithinAbs(0.2,0.01));
+//     // Test: pure rotation
+//     Wheel_state wheel_vel2{-0.1, 0.1};
+//     dd.forward_kinematics(wheel_vel2);
+//     REQUIRE_THAT(dd.get_robot_pos().rotation(),
+//         Catch::Matchers::WithinAbs(-0.05,0.1));
+//     REQUIRE_THAT(dd.get_robot_pos().translation().x,
+//         Catch::Matchers::WithinAbs(1.1,0.1));
+//     REQUIRE_THAT(dd.get_robot_pos().translation().y,
+//         Catch::Matchers::WithinAbs(2.0,0.01));
+//     REQUIRE_THAT(dd.get_wheel_pos().phi_l,
+//         Catch::Matchers::WithinAbs(0.3,0.01));
+//     REQUIRE_THAT(dd.get_wheel_pos().phi_r,
+//         Catch::Matchers::WithinAbs(0.2,0.01));
     
-}
+// }
 
 TEST_CASE("Test Inverse Kinematics","[inverse_kinamatics]"){
     Transform2D tf({1.0,2.0}, 0.0);

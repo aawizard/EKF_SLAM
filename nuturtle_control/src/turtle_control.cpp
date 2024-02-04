@@ -1,13 +1,36 @@
+/// \file turtle_control.cpp
+/// \brief TODO: Fill in the documentation for this file
+///
+///PARAMETERS:
+///    \param wheel_radius (double): radius of the wheel [m]
+///    \param track_width (double): distance between the wheels [m]
+///    \param motor_cmd_max (double): maximum motor command [rad/s]
+///    \param motor_cmd_per_rad_sec (double): motor command per rad/s
+///    \param encoder_ticks_per_rev (double): encoder ticks per revolution
+///    \param collision_radius (double): collision radius of the robot [m]
+///SUBSCRIBES:
+///    \param cmd_vel (geometry_msgs::msg::Twist): Twist command to execute
+///    \param sensor_data (nuturtlebot_msgs::msg::SensorData): Sensor data from the robot
+///PUBLISHES:
+///    \param wheel_cmd (nuturtlebot_msgs::msg::WheelCommands): Wheel commands to execute
+///    \param joint_states (sensor_msgs::msg::JointState): Joint states of the robot
+
+
 #include <chrono>
 #include <functional>
 #include <memory>
 #include <string>
-
+#include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp/rclcpp.hpp"
-
+#include "nuturtlebot_msgs/msg/wheel_commands.hpp"
+#include "nuturtlebot_msgs/msg/sensor_data.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
+// #include "turtlelib/se2d.hpp"
+// #include "turtlelib/geometry.hpp"
+#include "turtlelib/diff_drive.hpp"
 
 using namespace std::chrono_literals;
-
+// using namespace turtlelib;
 
 /// \brief TODO: Fill in the documentation for this class
 /// \param wheel_radius - radius of the wheel [m]
@@ -22,13 +45,85 @@ public:
   Turtle_control()
   : Node("turtle_control")
   {
-    declare_parameter("wheel_radius", 0.033);
-    declare_parameter("track_width", 0.160);
-    declare_parameter("motor_cmd_max", 265);
-    declare_parameter("motor_cmd_per_rad_sec", 0.024);
-    declare_parameter("encoder_ticks_per_rev", 4096);
-    declare_parameter("collision_radius", 0.11);
+    declare_parameter("wheel_radius", -1.0);
+    declare_parameter("track_width", -1.0);
+    declare_parameter("motor_cmd_max", -1.0);
+    declare_parameter("motor_cmd_per_rad_sec", -1.0);
+    declare_parameter("encoder_ticks_per_rev", -1.0);
+    declare_parameter("collision_radius", -1.0);
+
+    wheel_radius = get_parameter("wheel_radius").as_double();
+    track_width = get_parameter("track_width").as_double();
+    motor_cmd_max = get_parameter("motor_cmd_max").as_double();
+    motor_cmd_per_rad_sec = get_parameter("motor_cmd_per_rad_sec").as_double();
+    encoder_ticks_per_rev = get_parameter("encoder_ticks_per_rev").as_double();
+    collision_radius = get_parameter("collision_radius").as_double();
+
+    if (wheel_radius < 0.0 || track_width < 0.0 || motor_cmd_max < 0.0 ||
+      motor_cmd_per_rad_sec < 0.0 || encoder_ticks_per_rev < 0.0 || collision_radius < 0.0)
+    {
+      RCLCPP_ERROR_STREAM(get_logger(), "Invalid parameters");
+      // exit(-1);
+    }
+
+    sub_twist_ = create_subscription<geometry_msgs::msg::Twist>(
+      "cmd_vel", 10, std::bind(&Turtle_control::twist_callback, this, std::placeholders::_1));
+    sub_sensor_ = create_subscription<nuturtlebot_msgs::msg::SensorData>(
+      "sensor_data", 10, std::bind(&Turtle_control::sensor_callback, this, std::placeholders::_1));
+
+    pub_wheel_ = create_publisher<nuturtlebot_msgs::msg::WheelCommands>("wheel_cmd", 10);
+    pub_joint_ = create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
+
+    robot.initilize(track_width, wheel_radius, turtlelib::Transform2D());
   }
+
+private:
+  void twist_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
+  {
+    turtlelib::Twist2D twist{msg->angular.z, msg->linear.x, msg->linear.y};
+    turtlelib::Wheel_state wheel_vels = robot.inverse_kinematics(twist);
+
+    //Diffdrive claculation
+    nuturtlebot_msgs::msg::WheelCommands wheel_cmd;
+    wheel_cmd.left_velocity = wheel_vels.phi_l / motor_cmd_per_rad_sec;
+    wheel_cmd.right_velocity = wheel_vels.phi_r / motor_cmd_per_rad_sec;
+
+    if (wheel_cmd.left_velocity > motor_cmd_max) {
+      wheel_cmd.left_velocity = motor_cmd_max;
+    } else if (wheel_cmd.left_velocity < -motor_cmd_max) {
+      wheel_cmd.left_velocity = -motor_cmd_max;
+    }
+    if (wheel_cmd.right_velocity > motor_cmd_max) {
+      wheel_cmd.right_velocity = motor_cmd_max;
+    } else if (wheel_cmd.right_velocity < -motor_cmd_max) {
+      wheel_cmd.right_velocity = -motor_cmd_max;
+    }
+    pub_wheel_->publish(wheel_cmd);
+  }
+  void sensor_callback(const nuturtlebot_msgs::msg::SensorData::SharedPtr msg) const
+  {
+    //JointState calculation
+    sensor_msgs::msg::JointState joint_state;
+    joint_state.header.stamp = now();
+    joint_state.name = {"left_wheel_joint", "right_wheel_joint"};
+    joint_state.position = {0.0, 0.0};
+    joint_state.velocity = {0.0, 0.0};
+    pub_joint_->publish(joint_state);
+  }
+
+  double wheel_radius = 0.0;
+  double track_width = 0.0;
+  double motor_cmd_max = 0.0;
+  double motor_cmd_per_rad_sec = 0.0;
+  double encoder_ticks_per_rev = 0.0;
+  double collision_radius = 0.0;
+  turtlelib::Diff_drive robot;
+  turtlelib::Wheel_state wheel_state;
+
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
+  rclcpp::Subscription<nuturtlebot_msgs::msg::SensorData>::SharedPtr sub_sensor_;
+  rclcpp::Publisher<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr pub_wheel_;
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr pub_joint_;
 
 };
 
