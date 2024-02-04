@@ -52,8 +52,12 @@ namespace turtlelib
         twist.omega = (wheel_radius/wheel_track)*(wheel_vels.phi_r - wheel_vels.phi_l);
         twist.x = (wheel_radius/2)*cos(robot_pos.rotation())*(wheel_vels.phi_r + wheel_vels.phi_l);
         twist.y = (wheel_radius/2)*sin(robot_pos.rotation())*(wheel_vels.phi_r + wheel_vels.phi_l);
-        Transform2D Tbb_ = integrate_twist(twist);
-        robot_pos *= Tbb_;
+        
+        auto new_phi = robot_pos.rotation() + twist.omega;
+        new_phi = normalize_angle(new_phi);
+        robot_pos = Transform2D(robot_pos.translation(), new_phi);
+        // Transform2D Tbb_ = integrate_twist(twist);
+        // robot_pos *= Tbb_;
         wheel_state.phi_r = new_wheel_state.phi_r;
         wheel_state.phi_l = new_wheel_state.phi_l;
     }

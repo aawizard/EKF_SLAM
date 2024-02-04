@@ -75,6 +75,8 @@ public:
     pub_joint_ = create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
 
     robot.initilize(track_width, wheel_radius, turtlelib::Transform2D());
+    joint_state.header.stamp = this->get_clock()->now();
+    joint_state.name = {"left_wheel_joint", "right_wheel_joint"};
   }
 
 private:
@@ -100,14 +102,18 @@ private:
     }
     pub_wheel_->publish(wheel_cmd);
   }
-  void sensor_callback(const nuturtlebot_msgs::msg::SensorData::SharedPtr msg) const
+  void sensor_callback(const nuturtlebot_msgs::msg::SensorData::SharedPtr msg)
   {
+    double left_wheel_joint = msg->left_encoder / encoder_ticks_per_rev;
+    double right_wheel_joint = msg->right_encoder / encoder_ticks_per_rev;
+    auto del_t = msg->stamp.sec + msg->stamp.nanosec * 1e-9 - joint_state.header.stamp.sec -
+      joint_state.header.stamp.nanosec * 1e-9;
+    double left_wheel_velocity = (left_wheel_joint - joint_state.position[0]) / del_t;
+    double right_wheel_velocity = (right_wheel_joint - joint_state.position[1]) / del_t;
     //JointState calculation
-    sensor_msgs::msg::JointState joint_state;
-    joint_state.header.stamp = now();
-    joint_state.name = {"left_wheel_joint", "right_wheel_joint"};
-    joint_state.position = {0.0, 0.0};
-    joint_state.velocity = {0.0, 0.0};
+    joint_state.header.stamp = this->get_clock()->now();
+    joint_state.position = {left_wheel_joint, right_wheel_joint};
+    joint_state.velocity = {left_wheel_velocity, right_wheel_velocity};
     pub_joint_->publish(joint_state);
   }
 
@@ -119,6 +125,7 @@ private:
   double collision_radius = 0.0;
   turtlelib::Diff_drive robot;
   turtlelib::Wheel_state wheel_state;
+  sensor_msgs::msg::JointState joint_state;
 
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
   rclcpp::Subscription<nuturtlebot_msgs::msg::SensorData>::SharedPtr sub_sensor_;
