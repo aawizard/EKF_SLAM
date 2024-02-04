@@ -1,5 +1,7 @@
 /// \file turtle_control.cpp
-/// \brief TODO: Fill in the documentation for this file
+/// \brief Publishes wheel commands and joint states of the robot
+/// \brief Subscribes to twist and calculates wheel commands.
+/// \brief Subscribes to sensor data and calculates joint states.
 ///
 ///PARAMETERS:
 ///    \param wheel_radius (double): radius of the wheel [m]
@@ -32,7 +34,7 @@
 using namespace std::chrono_literals;
 // using namespace turtlelib;
 
-/// \brief TODO: Fill in the documentation for this class
+/// \brief Publishes wheel commands and joint states of the robot
 /// \param wheel_radius - radius of the wheel [m]
 /// \param track_width - distance between the wheels [m]
 /// \param motor_cmd_max - maximum motor command [rad/s]

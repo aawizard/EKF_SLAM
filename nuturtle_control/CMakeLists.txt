@@ -19,11 +19,18 @@ find_package(geometry_msgs REQUIRED)
 
 find_package(rosidl_default_generators REQUIRED)
 add_executable(turtle_control src/turtle_control.cpp)
+add_executable(odometry src/odometry.cpp)
 
 ament_target_dependencies(turtle_control rclcpp geometry_msgs turtlelib nuturtlebot_msgs sensor_msgs)
+ament_target_dependencies(odometry rclcpp geometry_msgs turtlelib nuturtlebot_msgs sensor_msgs)
+
 target_link_libraries(turtle_control turtlelib::turtlelib ${cpp_typesupport_target})
+target_link_libraries(odometry turtlelib::turtlelib ${cpp_typesupport_target})
+
+
 install(TARGETS
   turtle_control
+  odometry
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
