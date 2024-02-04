@@ -17,6 +17,7 @@
 #include <string>
 #include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "nuturtlebot_msgs/msg/wheel_commands.hpp"
 #include "nuturtlebot_msgs/msg/sensor_data.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
@@ -60,8 +61,8 @@ public:
       RCLCPP_ERROR_STREAM(get_logger(), "wheel_right not set");
       // exit(-1);
     }
-    // sub_twist_ = create_subscription<geometry_msgs::msg::Twist>(
-    //   "cmd_vel", 10, std::bind(&Odometry::twist_callback, this, std::placeholders::_1));
+    sub_joint_state_ = create_subscription<sensor_msgs::msg::JointState>(
+      "joint_states", 10, std::bind(&Odometry::joint_state_callback, this, std::placeholders::_1));
     // sub_sensor_ = create_subscription<nuturtlebot_msgs::msg::SensorData>(
     //   "sensor_data", 10, std::bind(&Odometry::sensor_callback, this, std::placeholders::_1));
 
@@ -71,9 +72,18 @@ public:
     // robot.initilize(track_width, wheel_radius, turtlelib::Transform2D());
     // joint_state.header.stamp = this->get_clock()->now();
     // joint_state.name = {"left_wheel_joint", "right_wheel_joint"};
+    odom.header.frame_id = odom_id;
+    odom.child_frame_id = body_id;
+    odom.header.stamp = this->get_clock()->now();
   }
 
 private:
+    void joint_state_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
+    { 
+        auto left_wheel_joint = msg->position[0];
+        auto right_wheel_joint = msg->position[1];
+    }
+
 //   void twist_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
 //   {
 //     turtlelib::Twist2D twist{msg->angular.z, msg->linear.x, msg->linear.y};
@@ -115,11 +125,12 @@ private:
   std::string odom_id = "";
   std::string wheel_left = "";
   std::string wheel_right = "";
+  nav_msgs::msg::Odometry odom;
 //   turtlelib::Diff_drive robot;
 //   turtlelib::Wheel_state wheel_state;
 //   sensor_msgs::msg::JointState joint_state;
 
-//   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_joint_state_;
 //   rclcpp::Subscription<nuturtlebot_msgs::msg::SensorData>::SharedPtr sub_sensor_;
 //   rclcpp::Publisher<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr pub_wheel_;
 //   rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr pub_joint_;

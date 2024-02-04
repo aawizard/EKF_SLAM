@@ -42,25 +42,25 @@ namespace turtlelib
         wheel_state.phi_r = 0.0;
     }
 
-    void Diff_drive::forward_kinematics(Wheel_state new_wheel_state)
+    Twist2D Diff_drive::Twist(Wheel_state wheel_vels)
     {
-        Wheel_state wheel_vels = {new_wheel_state.phi_r - wheel_state.phi_r, new_wheel_state.phi_l - wheel_state.phi_l};
-        
-
+        // Equation 13.34 from Modern Robotics
         Twist2D twist;
-        // Formulas from the notes: eq 3
         twist.omega = (wheel_radius/wheel_track)*(wheel_vels.phi_r - wheel_vels.phi_l);
-        twist.x = (wheel_radius/2)*cos(robot_pos.rotation())*(wheel_vels.phi_r + wheel_vels.phi_l);
-        twist.y = (wheel_radius/2)*sin(robot_pos.rotation())*(wheel_vels.phi_r + wheel_vels.phi_l);
-        
-        auto new_phi = robot_pos.rotation() + twist.omega;
-        new_phi = normalize_angle(new_phi);
-        robot_pos = Transform2D(robot_pos.translation(), new_phi);
-        // Transform2D Tbb_ = integrate_twist(twist);
-        // robot_pos *= Tbb_;
-        wheel_state.phi_r = new_wheel_state.phi_r;
-        wheel_state.phi_l = new_wheel_state.phi_l;
+        twist.x = (wheel_radius/2)*(wheel_vels.phi_r + wheel_vels.phi_l);
+        twist.y = 0;
+        return twist;
     }
+
+    void Diff_drive::forward_kinematics(Wheel_state wheel_vels)
+    {
+        Twist2D twist = Twist(wheel_vels);
+        Transform2D Tbb_ = integrate_twist(twist);
+        robot_pos *= Tbb_;
+        wheel_state.phi_r += wheel_vels.phi_r;
+        wheel_state.phi_l += wheel_vels.phi_l;
+    }
+   
 
     Wheel_state Diff_drive::inverse_kinematics(Twist2D twist) 
     {
