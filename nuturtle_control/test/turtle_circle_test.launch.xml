@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="turtle_control" pkg="nuturtle_control" exec="circle">
+        <param name="frequency" value="200"/>
+    </node>
+    <executable
+    cmd="/control nuturtle_control/srv/Control '{velocity: 0.1, radius: 0.1}'"
+    
+    cwd="/home"
+    launch-prefix="ros2 service call"
+    >
+</executable>   
+    <catch2_integration_test_node
+    pkg='nuturtle_control'
+    exec='turtle_circle_test'
+>
+<param name='test_duration' value='15.0'/>
+<param name='frequency' value='200'/>
+</catch2_integration_test_node>
+</launch>
