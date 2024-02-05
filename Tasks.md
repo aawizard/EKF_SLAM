@@ -33,18 +33,18 @@
 - [ ] The Simulator - Task D
     - [x] Task D.1
     - [x] Task D.2
-    - [ ] Task D.3
- 
+    - [ ] Task D.3 (PDF of furmulas to upload)
+  
 - [ ] The Simulator - Task E
-    - [ ] Task E.1
-    - [ ] Task E.2
-    - [ ] Task E.3
+    - [x] Task E.1
+    - [x] Task E.2
+    - [x] Task E.3
     - [ ] Task E.4
     - [ ] Task E.5
     - [ ] Task E.6
 
 - [ ] The Simulator - Task F
-    - [ ] Task F.1
+    - [x] Task F.1
     - [ ] Task F.2
     - [ ] Task F.5
 

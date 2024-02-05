@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+    <node name="odometry" pkg="nuturtle_control" exec="odometry">
+        <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
+        <param name="body_id" value="base_footprint"/>
+        <param name="wheel_left" value="left_wheel_joint"/>
+        <param name="wheel_right" value="right_wheel_joint"/>
+    </node>
+    <!-- <catch2_integration_test_node
+    pkg='nuturtle_control'
+    exec='turtle_odometry_test'
+></catch2_integration_test_node> -->
+</launch>
