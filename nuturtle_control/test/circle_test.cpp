@@ -4,8 +4,15 @@
 
 using namespace std::chrono_literals;
 auto freq = 0;
+rclcpp::Time start_time = rclcpp::Clock().now();
+bool first = true;
 void cmd_sub(const geometry_msgs::msg::Twist::SharedPtr)
 {
+  if (first)
+  {
+    start_time = rclcpp::Clock().now();
+    first = false;
+  }
   freq++;
 }
 
@@ -24,7 +31,7 @@ TEST_CASE("test_circle_node", "[frequency test]") {
     "cmd_vel", 10,&cmd_sub);
 
 
-  rclcpp::Time start_time = rclcpp::Clock().now();
+  
   // Keep test running only for the length of the "test_duration" parameter
   // (in seconds)
   while (

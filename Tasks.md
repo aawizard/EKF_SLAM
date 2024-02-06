@@ -39,7 +39,7 @@
     - [x] Task E.1
     - [x] Task E.2
     - [x] Task E.3
-    - [ ] Task E.4
+    - [x] Task E.4
     - [ ] Task E.5
     - [ ] Task E.6
 

@@ -64,32 +64,40 @@ if(BUILD_TESTING)
   # ament_lint_auto_find_test_dependencies()
   include(CTest)
   add_executable(turtle_control_test test/turtle_control_test.cpp)
-  # add_executable(turtle_odom_test test/turtle_odom_test_node.cpp)
+  add_executable(turtle_odom_test_node test/turtle_odom_test_node.cpp)
   add_executable(turtle_circle_test test/circle_test.cpp)
+
   target_link_libraries(turtle_control_test catch_ros2::catch_ros2_with_node_main)
-  # target_link_libraries(turtle_odom_test catch_ros2::catch_ros2_with_node_main)
-  target_link_libraries(turtle_circle_test catch_ros2::catch_ros2_with_node_main)
+  target_link_libraries(turtle_odom_test_node catch_ros2::catch_ros2_with_node_main ${cpp_typesupport_target})
+  target_link_libraries(turtle_circle_test catch_ros2::catch_ros2_with_node_main )
+
   ament_target_dependencies(turtle_control_test rclcpp geometry_msgs turtlelib nuturtlebot_msgs sensor_msgs)
-  # ament_target_dependencies(turtle_odom_test rclcpp geometry_msgs turtlelib  nav_msgs tf2 tf2_ros sensor_msgs)
+  ament_target_dependencies(turtle_odom_test_node rclcpp nuturtlebot_msgs geometry_msgs sensor_msgs nav_msgs tf2 tf2_ros turtlelib std_srvs)
   ament_target_dependencies(turtle_circle_test rclcpp geometry_msgs)
   install(TARGETS
     turtle_control_test
-    # turtle_odom_test
+    turtle_odom_test_node
     turtle_circle_test
     DESTINATION lib/${PROJECT_NAME})
 
+
+
+
+  install(DIRECTORY
+    srv
+    DESTINATION share/${PROJECT_NAME})
   install(FILES
     test/turtle_control_test.launch.xml
-    # test/turtle_odom_test.launch.xml
+    test/turtle_odom_test.launch.xml
     test/turtle_circle_test.launch.xml
     DESTINATION share/${PROJECT_NAME}/test)
 
   catch_ros2_add_integration_test(turtle_control_test
     LAUNCH_FILE turtle_control_test.launch.xml
   )
-  # catch_ros2_add_integration_test(turtle_odom_test
-  #   LAUNCH_FILE turtle_odom_test.launch.xml
-  # )
+  catch_ros2_add_integration_test(turtle_odom_test
+    LAUNCH_FILE turtle_odom_test.launch.xml
+  )
 
   catch_ros2_add_integration_test(turtle_circle_test
     LAUNCH_FILE turtle_circle_test.launch.xml

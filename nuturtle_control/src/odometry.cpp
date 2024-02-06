@@ -80,7 +80,7 @@ public:
     pub_odom_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
 
     init_config_service = this->create_service<nuturtle_control::srv::InitConfig>(
-      "~/initial_pose", std::bind(
+      "/initial_pose", std::bind(
         &Odometry::init_pose_callback, this,
         std::placeholders::_1, std::placeholders::_2));
 
@@ -124,11 +124,10 @@ private:
   }
   void init_pose_callback(
     const std::shared_ptr<nuturtle_control::srv::InitConfig::Request> request,
-    std::shared_ptr<nuturtle_control::srv::InitConfig::Response> response)
+    std::shared_ptr<nuturtle_control::srv::InitConfig::Response>)
   {
     turtlelib::Transform2D Tsb({request->x, request->y}, request->theta);
     robot.set_pos(Tsb);
-    response->success = true;
   }
   std::string body_id = "";
   std::string odom_id = "";

@@ -113,12 +113,8 @@ private:
       auto del_t = msg->stamp.sec + msg->stamp.nanosec * 1e-9 - joint_state.header.stamp.sec -
       joint_state.header.stamp.nanosec * 1e-9;
       del_t = del_t*1e5;
-      RCLCPP_ERROR_STREAM(get_logger(), "js_left: " << joint_state.position[0]);
-      RCLCPP_ERROR_STREAM(get_logger(), "js_right: " << joint_state.position[1]);
       double left_wheel_velocity = (left_wheel_joint - joint_state.position[0]) / del_t;
       double right_wheel_velocity = (right_wheel_joint - joint_state.position[1]) / del_t;
-      RCLCPP_ERROR_STREAM(get_logger(), "Left wheel velocity: " << left_wheel_velocity);
-      RCLCPP_ERROR_STREAM(get_logger(), "Right wheel velocity: " << right_wheel_velocity);
       //JointState calculation
       joint_state.header.stamp = msg->stamp;
       joint_state.position = {left_wheel_joint, right_wheel_joint};

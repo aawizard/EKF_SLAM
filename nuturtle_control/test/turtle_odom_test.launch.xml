@@ -1,13 +1,20 @@
 <?xml version="1.0"?>
 <launch>
+    <node exec="robot_state_publisher" pkg="robot_state_publisher">
+        <param name="robot_description" value="$(command '$(exec-in-pkg xacro xacro) $(find-pkg-share nuturtle_description)/urdf/turtlebot3_burger.urdf.xacro color:=red')"/>
+    </node>
+
+    <node pkg="joint_state_publisher" exec="joint_state_publisher"/>
     <node name="odometry" pkg="nuturtle_control" exec="odometry">
-        <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
+        <param name="wheel_radius" value="0.033" />
+        <param name="track_width" value="0.160" />
         <param name="body_id" value="base_footprint"/>
         <param name="wheel_left" value="left_wheel_joint"/>
         <param name="wheel_right" value="right_wheel_joint"/>
     </node>
-    <!-- <catch2_integration_test_node
+    
+    <catch2_integration_test_node
     pkg='nuturtle_control'
-    exec='turtle_odometry_test'
-></catch2_integration_test_node> -->
+    exec='turtle_odom_test_node'>
+</catch2_integration_test_node>
 </launch>

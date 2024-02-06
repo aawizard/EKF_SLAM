@@ -1,100 +1,67 @@
-// #include "catch_ros2/catch_ros2.hpp"
-// #include "rclcpp/rclcpp.hpp"
-// #include "geometry_msgs/msg/twist.hpp"
-// #include "nuturtlebot_msgs/msg/wheel_commands.hpp"
-// #include "nuturtlebot_msgs/msg/sensor_data.hpp"
-// #include "sensor_msgs/msg/joint_state.hpp"
-// #include <catch2/catch_test_macros.hpp>
-// #include<iostream>
-// using namespace std::chrono_literals;
+#include "catch_ros2/catch_ros2.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/executor.hpp>
 
-// nuturtlebot_msgs::msg::WheelCommands wheel_cmd;
-// sensor_msgs::msg::JointState joint_state;
-// bool got_wheel_cmd = false;
-// void sub_callback(nuturtlebot_msgs::msg::WheelCommands::SharedPtr msg)
-// {
-//   wheel_cmd.left_velocity = msg->left_velocity;
-//   wheel_cmd.right_velocity = msg->right_velocity;
-//   got_wheel_cmd = true;
-// }
+#include "nuturtle_control/srv/init_config.hpp"
+#include "nuturtlebot_msgs/msg/sensor_data.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
+#include <catch2/catch_test_macros.hpp>
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 
-// void encoder_sub(sensor_msgs::msg::JointState::SharedPtr msg)
-// {
-//   std::cout << "Encoder data received" << std::endl;
-  
-//   // joint_state.position = msg->position;
-//   // joint_state.velocity = msg->velocity;
-//   got_wheel_cmd = true;
-// }
+using namespace std::chrono_literals;
 
-// TEST_CASE("turtle_control_test", "[pure_translation]") {
+TEST_CASE("turtle_odom_test_node", "[initial_pose_srv]") {
 
-//   auto node = rclcpp::Node::make_shared("turtle_control_test");
-//   auto publisher = node->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-//   auto subscriber = node->create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
-//     "wheel_cmd", 10,
-//     &sub_callback);
-//   geometry_msgs::msg::Twist twist;
-//   twist.linear.x = 0.01;
-//   twist.angular.z = 0.0;
+  auto node = rclcpp::Node::make_shared("turtle_odom_test_node");
 
-//   while (
-//     rclcpp::ok() && !got_wheel_cmd
-//   )
-//   {
-//     publisher->publish(twist);
 
-//     rclcpp::spin_some(node);
-//   }
+  // Create a client for the service we're looking for
+  auto client = node->create_client<nuturtle_control::srv::InitConfig>("/initial_pose");
+  rclcpp::Time start_time = rclcpp::Clock().now();
+  bool service_result = false;
+  while (
+    rclcpp::ok() &&
+    ((rclcpp::Clock().now() - start_time) < rclcpp::Duration::from_seconds(20))
+  )
+  {
+    if (client->wait_for_service(0s)) {   
+      service_result = true;
+      break;
+    }
+    rclcpp::spin_some(node);
+  }
 
-//   CHECK(got_wheel_cmd);
-//   REQUIRE_THAT(wheel_cmd.left_velocity, Catch::Matchers::WithinAbs(12, 0.01));
-//   REQUIRE_THAT(wheel_cmd.right_velocity, Catch::Matchers::WithinAbs(12, 0.01));
-// }
-// TEST_CASE("turtle_control_test", "[pure_rotation]") {
-//   got_wheel_cmd = false;
-//   auto node = rclcpp::Node::make_shared("turtle_control_test");
-//   auto publisher = node->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-//   auto subscriber = node->create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
-//     "wheel_cmd", 10,
-//     &sub_callback);
-//   geometry_msgs::msg::Twist twist;
-//   twist.linear.x = 0.0;
-//   twist.angular.z = 0.1;
+  CHECK(service_result);
+}
 
-//   while (
-//     rclcpp::ok() && !got_wheel_cmd
-//   )
-//   {
-//     publisher->publish(twist);
+TEST_CASE("turtle_odom_test_node", "[tf_broadcaster]") {
+  auto node = rclcpp::Node::make_shared("turtle_odom_test_node");
+  auto tf_buffer = std::make_shared<tf2_ros::Buffer>(node->get_clock());
+  auto tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer, node, false);
+  bool tf_result = false;
+  rclcpp::Time start_time = rclcpp::Clock().now();
+  while (
+    rclcpp::ok() &&
+    ((rclcpp::Clock().now() - start_time) < rclcpp::Duration::from_seconds(20))
+  )
+  {
+    try {
+      auto t = tf_buffer->lookupTransform("odom", "base_footprint", tf2::TimePointZero);
+      std::cout << t.transform.translation.x << std::endl;
+      std::cout << t.transform.translation.y << std::endl;
+      std::cout << t.transform.translation.z << std::endl;
+      if (t.transform.translation.x == 0 && t.transform.translation.y == 0 && t.transform.translation.z == 0 && t.transform.rotation.x == 0 && t.transform.rotation.y == 0 && t.transform.rotation.z == 0 && t.transform.rotation.w == 1) {
+        tf_result = true;
+        break;
+      }
+      break;
+    } catch (tf2::TransformException &ex) {
+      rclcpp::spin_some(node);
+    }
+  }
 
-//     rclcpp::spin_some(node);
-//   }
+  CHECK(tf_result);
 
-//   CHECK(got_wheel_cmd);
-//   REQUIRE_THAT(wheel_cmd.left_velocity, Catch::Matchers::WithinAbs(-10, 0.01));
-//   REQUIRE_THAT(wheel_cmd.right_velocity, Catch::Matchers::WithinAbs(10, 0.01));
-// }
-// TEST_CASE("turtle_control_test","[encoder_test]") {
-//   got_wheel_cmd = false;
-//   auto node = rclcpp::Node::make_shared("turtle_control_test");
-//   auto publisher = node->create_publisher<nuturtlebot_msgs::msg::SensorData>("sensor_data", 10);
-//   auto subscriber = node->create_subscription<sensor_msgs::msg::JointState>(
-//     "joint_states", 10,&encoder_sub);
-//   nuturtlebot_msgs::msg::SensorData sensor_data;
-//   sensor_data.left_encoder = 100;
-//   sensor_data.right_encoder = 100;
-//   sensor_data.stamp = node->get_clock()->now();
-//   std::cout<<"Publishing sensor data"<<std::endl;
-//   // while (
-//   //   rclcpp::ok() && !got_wheel_cmd
-//   // )
-//   // {
-//   //   publisher->publish(sensor_data);
-
-//   //   rclcpp::spin_some(node);
-//   // }
-
-//   CHECK(!got_wheel_cmd);
-
-// }
+}
