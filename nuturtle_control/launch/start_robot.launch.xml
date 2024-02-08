@@ -1,17 +1,48 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="cmd_src" default="none" description="Values can be: circle: launch the circle node, teleop: launch keyoard teleop, node."></arg>
-    <node name="turtle_control" pkg="nuturtle_control" exec="turtle_control">
-        <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
-    </node>
-    <group  if="$(eval '\'$(var cmd_src)\' == \'circle\'')">
-        <node name="turtle_control" pkg="nuturtle_control" exec="circle">
+     <arg name="cmd_src" default="circle" description="Values can be: circle: launch the circle node, teleop: launch keyoard teleop, node."></arg> 
+     <arg name="robot" default="nusim" description="Values can be: nusim: To run in simulation  localhost: To run on robot  none"/>
+    <arg name="use_rviz" default="false" description="Values can be: true: To run rviz  false: To not run rviz"/>
+        <group  if="$(eval '\'$(var cmd_src)\' == \'circle\'')">
+        <node name="circle" pkg="nuturtle_control" exec="circle">
             <param name="frequency" value="200"/>
         </node>
     </group>
-    <group  if="$(eval '\'$(var cmd_src)\' == \'teleop\'')">
+     <group  if="$(eval '\'$(var cmd_src)\' == \'teleop\'')">
         <node name="teleop" pkg="teleop_twist_keyboard" exec="teleop_twist_keyboard"></node>
     </group>
     <group  if="$(eval '\'$(var cmd_src)\' == \'none\'')"/>
 
+    <group if="$(eval '\'$(var robot)\' == \'nusim\'')">
+        <node pkg="nusim" exec="nusim" name="nusim" >
+            <param from="$(find-pkg-share nusim)/config/basic_world.yaml" />
+        </node>
+        <node name="turtle_control" pkg="nuturtle_control" exec="turtle_control">
+            <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
+            <!-- <remap from="joint_states" to="blue/joint_states" /> -->
+        </node>
+        <node name="odometry" pkg="nuturtle_control" exec="odometry">
+            <param name="wheel_radius" value="0.033" />
+            <param name="track_width" value="0.160" />
+            <param name="odom_id" value="odom"/>
+            <param name="body_id" value="blue/base_footprint"/>
+            <param name="wheel_left" value="blue/left_wheel_joint"/>
+            <param name="wheel_right" value="blue/right_wheel_joint"/>
+        </node>
+        <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py" >
+            <arg name="color" value="red" />
+            <arg name="use_rviz" value="false" />
+        </include>
+
+    </group>
+    <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py" >
+        <arg name="color" value="blue" />
+        <arg name="use_rviz" value="false" />
+    </include>
+
+        <!-- <node pkg="tf2_ros" type="static_transform_publisher" >
+            <param name="frame-id" value="nusim/world"/>
+            <param name="child-frame-id" value="odom"/>
+        </node> -->
+          <node pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share nusim)/config/nusim.rviz -f nusim/world" name= 'rviz2'/>
 </launch>

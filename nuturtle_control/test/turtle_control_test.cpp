@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 nuturtlebot_msgs::msg::WheelCommands wheel_cmd;
 sensor_msgs::msg::JointState joint_state;
 bool got_wheel_cmd = false;
-void sub_callback(nuturtlebot_msgs::msg::WheelCommands::SharedPtr msg)
+void sub_callback(const nuturtlebot_msgs::msg::WheelCommands::SharedPtr msg)
 {
   wheel_cmd.left_velocity = msg->left_velocity;
   wheel_cmd.right_velocity = msg->right_velocity;

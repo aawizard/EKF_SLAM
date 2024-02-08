@@ -75,6 +75,7 @@ public:
     pub_joint_ = create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
 
     robot.initilize(track_width, wheel_radius, turtlelib::Transform2D());
+    // joint_state.name = {"left_wheel_joint", "right_wheel_joint"};
   }
 
 private:
@@ -83,7 +84,7 @@ private:
     turtlelib::Twist2D twist{msg->angular.z, msg->linear.x, msg->linear.y};
     turtlelib::Wheel_state wheel_vels = robot.inverse_kinematics(twist);
     nuturtlebot_msgs::msg::WheelCommands wheel_cmd;
-    wheel_cmd.left_velocity =int( wheel_vels.phi_l / motor_cmd_per_rad_sec);
+    wheel_cmd.left_velocity = int( wheel_vels.phi_l / motor_cmd_per_rad_sec);
     wheel_cmd.right_velocity = int(wheel_vels.phi_r / motor_cmd_per_rad_sec);
 
     if (wheel_cmd.left_velocity > motor_cmd_max) {
@@ -105,15 +106,15 @@ private:
     double right_wheel_joint = msg->right_encoder / encoder_ticks_per_rev;
     if (first_time) {
       joint_state.header.stamp = msg->stamp;
-      joint_state.position = {0.0, 0.0};
+      joint_state.position = {left_wheel_joint, right_wheel_joint};
       joint_state.velocity = {0.0, 0.0};
       first_time = false;
     }
     else{
       auto del_t = msg->stamp.sec + msg->stamp.nanosec * 1e-9 - joint_state.header.stamp.sec -
       joint_state.header.stamp.nanosec * 1e-9;
-      del_t = del_t*1e5;
-      double left_wheel_velocity = (left_wheel_joint - joint_state.position[0]) / del_t;
+
+      double left_wheel_velocity =( (left_wheel_joint - joint_state.position[0]) / del_t);
       double right_wheel_velocity = (right_wheel_joint - joint_state.position[1]) / del_t;
       //JointState calculation
       joint_state.header.stamp = msg->stamp;
