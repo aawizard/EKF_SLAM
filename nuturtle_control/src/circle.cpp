@@ -42,9 +42,9 @@ public:
   Circle()
   : Node("circle")
   {
-    declare_parameter("frequency", 100);
+    declare_parameter("frequency", 200);
     frequency = get_parameter("frequency").as_int();
-
+    
     timer_ = this->create_wall_timer(
       1000ms / frequency, std::bind(&Circle::timer_callback, this));
 
@@ -97,7 +97,7 @@ private:
   int frequency = 100;
   double radius = 0.0;
   double velocity = 0.0;
-  State state = State::STOPPED;
+  State state = State::MOVING;
   geometry_msgs::msg::Twist twist;
   rclcpp::TimerBase::SharedPtr timer_;
 

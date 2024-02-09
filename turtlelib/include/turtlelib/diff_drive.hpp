@@ -44,7 +44,7 @@ namespace turtlelib
         /// \param wheel_track_ - distance between the wheels.
         /// \param wheel_radius_ - radius of the wheels.
         /// \param robot_pos_ - robot position.
-        void initilize(double wheel_track_, double wheel_radius_, Transform2D robot_pos_);
+        void initialize(double wheel_track_, double wheel_radius_, Transform2D robot_pos_);
 
         /// \brief Twist2D of a diffrential drive robot.
         /// \param wheel_vels - the wheel velocities.

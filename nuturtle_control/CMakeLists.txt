@@ -51,6 +51,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
+config
   launch
   srv
   DESTINATION share/${PROJECT_NAME}/

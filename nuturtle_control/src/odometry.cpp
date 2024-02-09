@@ -87,7 +87,7 @@ public:
     odom.header.frame_id = odom_id;
     odom.child_frame_id = body_id;
     odom.header.stamp = this->get_clock()->now();
-    robot.initilize(track_width, wheel_radius, turtlelib::Transform2D());
+    robot.initialize(track_width, wheel_radius, turtlelib::Transform2D());
     odom_tf_.header.frame_id = odom_id;
     odom_tf_.child_frame_id = body_id;
     odom_tf_.header.stamp = this->get_clock()->now();
@@ -97,8 +97,8 @@ private:
   void joint_state_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
   {
     turtlelib::Wheel_state wheel_vels;
-    wheel_vels.phi_l = msg->position[0] - robot.get_wheel_pos().phi_l;
-    wheel_vels.phi_r = msg->position[1] - robot.get_wheel_pos().phi_r;
+    wheel_vels.phi_l = (msg->position.at(0)  - left_wheel_joint);
+    wheel_vels.phi_r = (msg->position.at(1) - right_wheel_joint);
     turtlelib::Twist2D twist = robot.Twist(wheel_vels);
     robot.forward_kinematics(wheel_vels);
     turtlelib::Transform2D Tsb_ = robot.get_robot_pos();
@@ -114,6 +114,7 @@ private:
     odom.twist.twist.linear.x = twist.x;
     odom.twist.twist.angular.z = twist.omega;
     pub_odom_->publish(odom);
+    odom_tf_.header.stamp = this->get_clock()->now();
     odom_tf_.transform.translation.x = Tsb_.translation().x;
     odom_tf_.transform.translation.y = Tsb_.translation().y;
     odom_tf_.transform.rotation.x = q.x();
@@ -121,6 +122,8 @@ private:
     odom_tf_.transform.rotation.z = q.z();
     odom_tf_.transform.rotation.w = q.w();
     tf_broadcaster_->sendTransform(odom_tf_);
+    left_wheel_joint = msg->position.at(0);
+    right_wheel_joint = msg->position.at(1);
   }
   void init_pose_callback(
     const std::shared_ptr<nuturtle_control::srv::InitConfig::Request> request,
@@ -135,6 +138,8 @@ private:
   std::string wheel_right = "";
   double wheel_radius = 0.0;
   double track_width = 0.0;
+  double left_wheel_joint = 0.0;
+  double right_wheel_joint = 0.0;
   nav_msgs::msg::Odometry odom;
   turtlelib::Diff_drive robot;
   geometry_msgs::msg::TransformStamped odom_tf_;

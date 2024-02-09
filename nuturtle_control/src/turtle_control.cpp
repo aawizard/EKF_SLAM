@@ -74,11 +74,13 @@ public:
     pub_wheel_ = create_publisher<nuturtlebot_msgs::msg::WheelCommands>("wheel_cmd", 10);
     pub_joint_ = create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
 
-    robot.initilize(track_width, wheel_radius, turtlelib::Transform2D());
+    robot.initialize(track_width, wheel_radius, turtlelib::Transform2D());
     // joint_state.name = {"left_wheel_joint", "right_wheel_joint"};
   }
 
 private:
+  /// \brief Subscribes to twist and calculates wheel commands.
+  /// \param msg - Twist command to execute
   void twist_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
   {
     turtlelib::Twist2D twist{msg->angular.z, msg->linear.x, msg->linear.y};
@@ -99,13 +101,16 @@ private:
     }
     pub_wheel_->publish(wheel_cmd);
   }
+  /// \brief Subscribes to sensor data and calculates joint states.
+  /// \param msg - Sensor data from the robot
   void sensor_callback(const nuturtlebot_msgs::msg::SensorData::SharedPtr msg)
   {
 
-    double left_wheel_joint = msg->left_encoder / encoder_ticks_per_rev;
-    double right_wheel_joint = msg->right_encoder / encoder_ticks_per_rev;
+    double left_wheel_joint = static_cast<double>(msg->left_encoder) / encoder_ticks_per_rev;
+    double right_wheel_joint = static_cast<double>(msg->right_encoder) / encoder_ticks_per_rev;
     if (first_time) {
       joint_state.header.stamp = msg->stamp;
+      joint_state.name = {"wheel_left_joint", "wheel_right_joint"};
       joint_state.position = {left_wheel_joint, right_wheel_joint};
       joint_state.velocity = {0.0, 0.0};
       first_time = false;
@@ -113,9 +118,9 @@ private:
     else{
       auto del_t = msg->stamp.sec + msg->stamp.nanosec * 1e-9 - joint_state.header.stamp.sec -
       joint_state.header.stamp.nanosec * 1e-9;
-
-      double left_wheel_velocity =( (left_wheel_joint - joint_state.position[0]) / del_t);
-      double right_wheel_velocity = (right_wheel_joint - joint_state.position[1]) / del_t;
+    
+      double left_wheel_velocity =( (left_wheel_joint - joint_state.position.at(0)) / del_t);
+      double right_wheel_velocity = (right_wheel_joint - joint_state.position.at(1)) / del_t;
       //JointState calculation
       joint_state.header.stamp = msg->stamp;
       joint_state.position = {left_wheel_joint, right_wheel_joint};

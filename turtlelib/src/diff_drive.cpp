@@ -16,7 +16,7 @@ namespace turtlelib
         wheel_state.phi_r = 0.0;
     }
 
-    void Diff_drive::initilize(double wheel_track_, double wheel_radius_, Transform2D robot_pos_)
+    void Diff_drive::initialize(double wheel_track_, double wheel_radius_, Transform2D robot_pos_)
     {
         wheel_track = wheel_track_;
         wheel_radius = wheel_radius_;

@@ -28,7 +28,7 @@
     - [x] Task C.5
     - [x] Task C.6
     - [x] Task C.7
-    - [ ] Task C.8
+    - [x] Task C.8
 
 - [ ] The Simulator - Task D
     - [x] Task D.1
@@ -45,6 +45,6 @@
 
 - [ ] The Simulator - Task F
     - [x] Task F.1
-    - [ ] Task F.2
+    - [x] Task F.2
     - [ ] Task F.5
 
