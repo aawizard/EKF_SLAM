@@ -16,7 +16,6 @@ find_package(std_srvs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(catch_ros2 REQUIRED)
 find_package(nusim REQUIRED)
 find_package(nuturtle_description REQUIRED)
 
@@ -60,10 +59,7 @@ config
 
 if(BUILD_TESTING)
 
-  # find_package(ament_lint_auto REQUIRED)
-  # set(ament_cmake_copyright_FOUND TRUE)
-  # set(ament_cmake_cpplint_FOUND TRUE)
-  # ament_lint_auto_find_test_dependencies()
+  find_package(catch_ros2 REQUIRED)
   include(CTest)
   add_executable(turtle_control_test test/turtle_control_test.cpp)
   add_executable(turtle_odom_test_node test/turtle_odom_test_node.cpp)

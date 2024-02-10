@@ -40,11 +40,11 @@
     - [x] Task E.2
     - [x] Task E.3
     - [x] Task E.4
-    - [ ] Task E.5
+    - [x] Task E.5
     - [ ] Task E.6
 
 - [ ] The Simulator - Task F
     - [x] Task F.1
     - [x] Task F.2
-    - [ ] Task F.5
+    - [x] Task F.5
 

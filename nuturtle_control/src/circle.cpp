@@ -65,8 +65,8 @@ private:
     nuturtle_control::srv::Control::Request::SharedPtr request,
     nuturtle_control::srv::Control::Response::SharedPtr)
   {
-    twist.linear.x = request->radius * request->velocity;
-    twist.angular.z = request->velocity;
+    twist.linear.x = -request->radius * request->velocity;
+    twist.angular.z = -request->velocity;
     state = State::MOVING;
   }
   void reverse_callback(

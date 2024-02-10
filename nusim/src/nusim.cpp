@@ -184,11 +184,9 @@ private:
     pub_sensor_->publish(sensor_data);
 
     //reverse the wheel commands to get the robot to move
-    
-    wheel_vels.phi_l = (msg->left_velocity * motor_cmd_per_rad_sec_ * 12.8) / rate ;
-    wheel_vels.phi_r = (msg->right_velocity * motor_cmd_per_rad_sec_ * 12.8) / rate;
-    auto twist = robot_.Twist(wheel_vels);
-    // RCLCPP_ERROR_STREAM(get_logger(), "Twist: " << twist.omega << " " << twist.x << " " << twist.y);
+
+    wheel_vels.phi_l = (msg->left_velocity * motor_cmd_per_rad_sec_ * 12.78) / rate;
+    wheel_vels.phi_r = (msg->right_velocity * motor_cmd_per_rad_sec_ * 12.78) / rate;
     //DO FK
     robot_.forward_kinematics(wheel_vels);
     //Change x_,y_,theta_
@@ -197,8 +195,6 @@ private:
     theta_ = robot_.get_robot_pos().rotation();
     //Change the position of tf
     change_position(x_, y_, theta_);
-    //     t.header.stamp = get_clock()->now();
-    // tf_broadcaster_->sendTransform(t);
 
   }
 

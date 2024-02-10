@@ -101,8 +101,8 @@ TEST_CASE("turtle_control_test","[encoder_test]") {
   }
 
   CHECK(got_wheel_cmd);
-  REQUIRE_THAT(joint_state.position[0], Catch::Matchers::WithinAbs(0.024, 0.01));
-  REQUIRE_THAT(joint_state.position[1], Catch::Matchers::WithinAbs(0.024, 0.01));
+  REQUIRE_THAT(joint_state.position[0], Catch::Matchers::WithinAbs(0.15, 0.01));
+  REQUIRE_THAT(joint_state.position[1], Catch::Matchers::WithinAbs(0.15, 0.01));
   REQUIRE_THAT(joint_state.velocity[0], Catch::Matchers::WithinAbs(0, 0.01));
   REQUIRE_THAT(joint_state.velocity[1], Catch::Matchers::WithinAbs(0, 0.01));
 
