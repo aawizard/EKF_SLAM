@@ -49,6 +49,7 @@ namespace turtlelib
 
     Twist2D Diff_drive::Twist(Wheel_state wheel_vels)
     {
+        //################# Start of citation 6 ##################
         // Equation 13.34 from Modern Robotics
         Twist2D twist;
         twist.omega = (wheel_radius/wheel_track)*(wheel_vels.phi_r - wheel_vels.phi_l);
@@ -65,7 +66,7 @@ namespace turtlelib
         wheel_state.phi_r += wheel_vels.phi_r;
         wheel_state.phi_l += wheel_vels.phi_l;
     }
-   
+   // ################# End of citation 6 ##################
 
     Wheel_state Diff_drive::inverse_kinematics(Twist2D twist) 
     {

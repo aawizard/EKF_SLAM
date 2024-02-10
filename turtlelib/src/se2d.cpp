@@ -56,10 +56,7 @@ namespace turtlelib {
         return p1;
     }
     Vector2D Transform2D::operator()(Vector2D v) const{
-        Vector2D v1;
-        v1.x = v.x * cos(theta) - v.y * sin(theta);
-        v1.y = v.x * sin(theta) + v.y * cos(theta);
-        return v1;
+        return {(v.x * cos(theta)) - (v.y * sin(theta)), (v.x * sin(theta)) + (v.y * cos(theta))};
     }
     Twist2D Transform2D::operator()(Twist2D v) const{
         Twist2D t;
@@ -89,10 +86,7 @@ namespace turtlelib {
     }
 
     Vector2D Transform2D::translation() const{
-        Vector2D v;
-        v.x = point.x;
-        v.y = point.y;
-        return v;
+        return {point.x,point.y};
     }
     double Transform2D::rotation() const{
         return theta;
@@ -105,18 +99,17 @@ namespace turtlelib {
         return os << ss.str();
     }
     std::istream & operator>>(std::istream & is, Transform2D & tf){
-        char c1 = is.get();
-        std::string c3 ,c4, c5;
+        const auto c1 = is.get();     
         double deg ;
         Vector2D v ;
 
         if (c1 == 'd'){
-
-            is>>c3>>deg>>c4>>v.x>>c5>>v.y; 
+            std::string c3 ,c4, c5;
+            is >> c3 >> deg >> c4 >> v.x >> c5 >> v.y; 
         }
         else{
             is.putback(c1);
-            is >>deg>>v.x>>v.y;
+            is >> deg >> v.x >> v.y;
         }
         Transform2D new_o{v,deg2rad(deg)};
         tf = new_o;

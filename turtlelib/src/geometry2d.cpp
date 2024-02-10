@@ -5,11 +5,11 @@
 
 namespace turtlelib {
     double normalize_angle(double rad) {
-        rad = fmod(rad, 2 * PI);
+        rad = fmod(rad, 2.0 * PI);
     if (rad > PI) {
-        rad -= 2 * PI;
+        rad -= 2.0 * PI;
     } else if (rad <= -PI) {
-        rad += 2 * PI;
+        rad += 2.0 * PI;
     }
     return rad;
 }
@@ -35,16 +35,10 @@ namespace turtlelib {
     return is;
  }
 Vector2D operator-(const Point2D & head, const Point2D & tail){
-    Vector2D v;
-    v.x = head.x - tail.x;
-    v.y = head.y - tail.y;
-    return v;
+    return {head.x - tail.x, head.y - tail.y};
 }
 Point2D operator+(const Point2D & tail, const Vector2D & disp){
-    Point2D p;
-    p.x = tail.x + disp.x;
-    p.y = tail.y + disp.y;
-    return p;
+    return {tail.x + disp.x, tail.y + disp.y};
     }
 
 std::ostream & operator<<(std::ostream & os, const Vector2D & v){

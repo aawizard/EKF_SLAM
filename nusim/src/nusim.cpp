@@ -80,52 +80,49 @@ public:
   Nusim()
   : Node("nusim"), count_(0)
   {
-    this->declare_parameter("rate", 200);
-    this->declare_parameter("x0", 0.0);
-    this->declare_parameter("y0", 0.0);
+    declare_parameter("rate", 200);
+    declare_parameter("x0", 0.0);
+    declare_parameter("y0", 0.0);
     //parameter for wall
-    this->declare_parameter("theta0", 0.0);
-    this->declare_parameter("arena_x_length", 2.0);
-    this->declare_parameter("arena_y_length", 2.0);
+    declare_parameter("theta0", 0.0);
+    declare_parameter("arena_x_length", 2.0);
+    declare_parameter("arena_y_length", 2.0);
 
     //parameters for obstacles
-    this->declare_parameter("obstacles/x", obstacle_x_);
-    this->declare_parameter("obstacles/y", obstacle_y_);
-    this->declare_parameter("obstacles/radius", 0.05);
+    declare_parameter("obstacles/x", obstacle_x_);
+    declare_parameter("obstacles/y", obstacle_y_);
+    declare_parameter("obstacles/radius", 0.05);
     declare_parameter("wheel_radius", 0.033);
     declare_parameter("track_width", 0.160);
     declare_parameter("motor_cmd_per_rad_sec", 0.024);
-    declare_parameter("encoder_ticks_per_rev", 650.0);
-
-
     rate = get_parameter("rate").as_int();
     rclcpp::QoS qos_policy = rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
     //publisher
-    publisher_timestep_ = this->create_publisher<std_msgs::msg::UInt64>("~/timestep", 10);
-    publisher_walls_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+    publisher_timestep_ = create_publisher<std_msgs::msg::UInt64>("~/timestep", 10);
+    publisher_walls_ = create_publisher<visualization_msgs::msg::MarkerArray>(
       "~/walls",
       qos_policy);
-    publisher_obstacles_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
+    publisher_obstacles_ = create_publisher<visualization_msgs::msg::MarkerArray>(
       "~/obstacles",
       qos_policy);
-    pub_sensor_ = this->create_publisher<nuturtlebot_msgs::msg::SensorData>("red/sensor_data", 10);
+    pub_sensor_ = create_publisher<nuturtlebot_msgs::msg::SensorData>("red/sensor_data", 10);
     //subscriber
     sub_wheel_ = create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
       "red/wheel_cmd", 10, std::bind(&Nusim::wheel_cmd_callback, this, std::placeholders::_1)
     );
     //service
-    reset_service = this->create_service<std_srvs::srv::Empty>(
+    reset_service = create_service<std_srvs::srv::Empty>(
       "~/reset", std::bind(
         &Nusim::reset_callback, this,
         std::placeholders::_1, std::placeholders::_2));
 
-    teleport_service = this->create_service<nusim::srv::Teleport>(
+    teleport_service = create_service<nusim::srv::Teleport>(
       "~/teleport", std::bind(
         &Nusim::teleport_callback, this,
         std::placeholders::_1, std::placeholders::_2));
 
     //timer
-    timer_ = this->create_wall_timer(
+    timer_ = create_wall_timer(
       1000ms / rate, std::bind(&Nusim::timer_callback, this));
     //tf
     tf_broadcaster_ =
@@ -138,7 +135,6 @@ public:
     wheel_radius_ = get_parameter("wheel_radius").as_double();
     track_width_ = get_parameter("track_width").as_double();
     motor_cmd_per_rad_sec_ = get_parameter("motor_cmd_per_rad_sec").as_double();
-    encoder_ticks_per_rev_sec_ = get_parameter("encoder_ticks_per_rev").as_double();
     x_ = x0_;
     y_ = y0_;
     theta_ = theta0_;
@@ -185,8 +181,8 @@ private:
 
     //reverse the wheel commands to get the robot to move
 
-    wheel_vels.phi_l = (msg->left_velocity * motor_cmd_per_rad_sec_ * 12.78) / rate;
-    wheel_vels.phi_r = (msg->right_velocity * motor_cmd_per_rad_sec_ * 12.78) / rate;
+    wheel_vels.phi_l = (msg->left_velocity * motor_cmd_per_rad_sec_) / rate;
+    wheel_vels.phi_r = (msg->right_velocity * motor_cmd_per_rad_sec_) / rate;
     //DO FK
     robot_.forward_kinematics(wheel_vels);
     //Change x_,y_,theta_

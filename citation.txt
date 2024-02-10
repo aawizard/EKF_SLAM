@@ -3,10 +3,13 @@ Worked with:
  - Demiana
  - Abhishek
  - Allan
+ - Anuj
 
-https://github.com/ros-visualization/rqt/issues/187   (qos)
-https://foxglove.dev/blog/how-to-use-ros2-parameters (list as a parameter)
-https://docs.ros2.org/bouncy/api/rclcpp/classrclcpp_1_1_parameter.html (convert parameter to array)
+Citations
+[1] https://github.com/ros-visualization/rqt/issues/187   (qos)
+[2] https://foxglove.dev/blog/how-to-use-ros2-parameters (list as a parameter)
+[3] https://docs.ros2.org/bouncy/api/rclcpp/classrclcpp_1_1_parameter.html (convert parameter to array)
 
-ChatGPT: https://chat.openai.com/share/24afed67-c025-43b8-9504-025b23879347
-turtlelib README Q1: Shail Dalal
+[4] ChatGPT: https://chat.openai.com/share/24afed67-c025-43b8-9504-025b23879347
+[5] turtlelib README Q1: Shail Dalal
+[6] Modern Robotics (Eq 13.34)

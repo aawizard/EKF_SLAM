@@ -33,7 +33,7 @@
 - [ ] The Simulator - Task D
     - [x] Task D.1
     - [x] Task D.2
-    - [ ] Task D.3 (PDF of furmulas to upload)
+    - [x] Task D.3
   
 - [ ] The Simulator - Task E
     - [x] Task E.1
