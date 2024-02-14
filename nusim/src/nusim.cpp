@@ -43,6 +43,7 @@
 #include "std_srvs/srv/empty.hpp"
 #include "turtlelib/diff_drive.hpp"
 #include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include <tf2_ros/transform_broadcaster.h>
@@ -52,6 +53,7 @@
 #include <nuturtlebot_msgs/msg/wheel_commands.hpp>
 #include <nuturtlebot_msgs/msg/sensor_data.hpp>
 #include <rclcpp/qos.hpp>
+#include <nav_msgs/msg/path.hpp>
 
 using namespace std::chrono_literals;
 
@@ -74,6 +76,7 @@ using namespace std::chrono_literals;
 /// \param wheel_radius: the radius of the wheels [m]
 /// \param track_width: the distance between the wheels [m]
 /// \param motor_cmd_per_rad_sec: the motor command per rad/s
+/// \param encoder_ticks_per_rev_sec: the encoder ticks per revolution per second[Hz]
 class Nusim : public rclcpp::Node
 {
 public:
@@ -95,6 +98,7 @@ public:
     declare_parameter("wheel_radius", 0.033);
     declare_parameter("track_width", 0.160);
     declare_parameter("motor_cmd_per_rad_sec", 0.024);
+    declare_parameter("encoder_ticks_per_rev_sec", 651.89865);
     rate = get_parameter("rate").as_int();
     rclcpp::QoS qos_policy = rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
     //publisher
@@ -135,6 +139,7 @@ public:
     wheel_radius_ = get_parameter("wheel_radius").as_double();
     track_width_ = get_parameter("track_width").as_double();
     motor_cmd_per_rad_sec_ = get_parameter("motor_cmd_per_rad_sec").as_double();
+    encoder_ticks_per_rev_sec_ = get_parameter("encoder_ticks_per_rev_sec").as_double();
     x_ = x0_;
     y_ = y0_;
     theta_ = theta0_;
@@ -168,21 +173,18 @@ private:
   void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands::SharedPtr msg)
   {
     //Save the wheel commands
-    left_wheel_joint += static_cast<double>(msg->left_velocity);
-    right_wheel_joint += static_cast<double>(msg->right_velocity);
+    left_wheel_joint += (static_cast<double>(msg->left_velocity) );
+    right_wheel_joint += (static_cast<double>(msg->right_velocity) );
     //Change to sensor data
-    nuturtlebot_msgs::msg::SensorData sensor_data;
-    sensor_data.left_encoder = left_wheel_joint;
-    sensor_data.right_encoder = right_wheel_joint;
-    sensor_data.stamp = get_clock()->now();
+    
+    sensor_data.left_encoder = left_wheel_joint * motor_cmd_per_rad_sec_ * (encoder_ticks_per_rev_sec_ / rate);
+    sensor_data.right_encoder = right_wheel_joint * motor_cmd_per_rad_sec_ * (encoder_ticks_per_rev_sec_ / rate);
 
-    //Publish the sensor data
-    pub_sensor_->publish(sensor_data);
 
     //reverse the wheel commands to get the robot to move
 
-    wheel_vels.phi_l = (msg->left_velocity * motor_cmd_per_rad_sec_) / rate;
-    wheel_vels.phi_r = (msg->right_velocity * motor_cmd_per_rad_sec_) / rate;
+    wheel_vels.phi_l = (msg->left_velocity * motor_cmd_per_rad_sec_ ) / rate;
+    wheel_vels.phi_r = (msg->right_velocity * motor_cmd_per_rad_sec_ ) / rate;
     //DO FK
     robot_.forward_kinematics(wheel_vels);
     //Change x_,y_,theta_
@@ -239,6 +241,10 @@ private:
     publisher_timestep_->publish(message);
     t.header.stamp = get_clock()->now();
     tf_broadcaster_->sendTransform(t);
+
+    sensor_data.stamp = get_clock()->now();
+    //Publish the sensor data
+    pub_sensor_->publish(sensor_data);
 
   }
   /// \brief creates a wall marker
@@ -357,6 +363,7 @@ private:
   double encoder_ticks_per_rev_sec_ = 0.0;
   turtlelib::Diff_drive robot_;
   turtlelib::Wheel_state wheel_vels;
+  nuturtlebot_msgs::msg::SensorData sensor_data;
 
   std::vector<double> obstacle_x_ = {0.25, 0.35};
   std::vector<double> obstacle_y_ = {0.25, -0.25};

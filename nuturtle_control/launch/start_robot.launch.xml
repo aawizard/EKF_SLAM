@@ -70,7 +70,10 @@
         <param name="wheel_right" value="wheel_right_joint"/>
         <remap from="joint_states" to="blue/joint_states"/>
     </node>
-    
+    <include file="$(find-pkg-share rtf_lds_lidar)/launch/hlds_laser.launch.py">
+    <arg name="frame_id" value="blue/base_scan"/>
+    <arg name="port" value="/dev/ttyUSB0"/>
+    </include>
     </group>
     <!-- None Group -->
     <group if="$(eval '\'$(var robot)\' == \'none\'')">

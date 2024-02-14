@@ -97,7 +97,7 @@ private:
   int frequency = 100;
   double radius = 0.0;
   double velocity = 0.0;
-  State state = State::MOVING;
+  State state = State::STOPPED;
   geometry_msgs::msg::Twist twist;
   rclcpp::TimerBase::SharedPtr timer_;
 

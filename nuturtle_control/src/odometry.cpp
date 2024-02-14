@@ -105,7 +105,7 @@ private:
     odom.pose.pose.position.x = Tsb_.translation().x;
     odom.pose.pose.position.y = Tsb_.translation().y;
     tf2::Quaternion q;
-    q.setRPY(0, 0, Tsb_.rotation());
+    q.setRPY(0, 0, Tsb_.rotation() + turtlelib::PI);
     odom.pose.pose.orientation.x = q.x();
     odom.pose.pose.orientation.y = q.y();
     odom.pose.pose.orientation.z = q.z();
@@ -117,6 +117,7 @@ private:
     odom_tf_.header.stamp = this->get_clock()->now();
     odom_tf_.transform.translation.x = Tsb_.translation().x;
     odom_tf_.transform.translation.y = Tsb_.translation().y;
+    q.setRPY(0, 0, Tsb_.rotation() );
     odom_tf_.transform.rotation.x = q.x();
     odom_tf_.transform.rotation.y = q.y();
     odom_tf_.transform.rotation.z = q.z();

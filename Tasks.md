@@ -29,13 +29,17 @@
     - [x] Task C.6
     - [x] Task C.7
     - [x] Task C.8
+    - [ ] Task C.9
+    - [ ] Task C.10
+    - [ ] Task C.11
+    - [ ] Task C.12
 
-- [ ] The Simulator - Task D
+- [ ] Kinematics - Task D
     - [x] Task D.1
     - [x] Task D.2
     - [x] Task D.3
   
-- [ ] The Simulator - Task E
+- [ ] Robot Control - Task E
     - [x] Task E.1
     - [x] Task E.2
     - [x] Task E.3
@@ -43,8 +47,18 @@
     - [x] Task E.5
     - [ ] Task E.6
 
-- [ ] The Simulator - Task F
+- [ ] The Real Robot - Task F
     - [x] Task F.1
     - [x] Task F.2
     - [x] Task F.5
+    - [ ] Task F.6
 
+- [ ] The Visualization - Task V
+    - [ ] Task V.1
+    - [ ] Task V.2
+    - [ ] Task V.3
+    - [ ] Task V.4
+
+- [ ] SLAM - Task L
+    - [ ] Task L.1
+    - [ ] Task L.2
