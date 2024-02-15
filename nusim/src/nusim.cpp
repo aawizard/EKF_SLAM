@@ -17,6 +17,10 @@
 ///     \param wheel_radius: the radius of the wheels [m]
 ///     \param track_width: the distance between the wheels [m]
 ///     \param motor_cmd_per_rad_sec: the motor command per rad/s
+///     \param encoder_ticks_per_rev_sec: the encoder ticks per revolution per second[Hz]
+///     \param draw_only: if true, only draw the arena and do not simulate the robot
+///     \param input_noise: the noise in the input
+///     \param slip_fraction: the fraction of slip in the robot
 ///PUBLISHES:
 ///     pub topic: ~/timestep [std_msgs::msg::UInt64] the current time step
 ///     pub topic: ~/walls [visualization_msgs::msg::MarkerArray] the walls of the arena
@@ -78,6 +82,9 @@ using namespace std::chrono_literals;
 /// \param track_width: the distance between the wheels [m]
 /// \param motor_cmd_per_rad_sec: the motor command per rad/s
 /// \param encoder_ticks_per_rev_sec: the encoder ticks per revolution per second[Hz]
+/// \param draw_only: if true, only draw the arena and do not simulate the robot
+/// \param input_noise: the noise in the input
+/// \param slip_fraction: the fraction of slip in the robot
 class Nusim : public rclcpp::Node
 {
 public:
@@ -100,15 +107,19 @@ public:
     declare_parameter("track_width", 0.160);
     declare_parameter("motor_cmd_per_rad_sec", 0.024);
     declare_parameter("encoder_ticks_per_rev_sec", 651.89865);
+    declare_parameter("draw_only", false);
+    declare_parameter("input_noise", 0.0);
+    declare_parameter("slip_fraction", 0.0);
+
     rate = get_parameter("rate").as_int();
     rclcpp::QoS qos_policy = rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
     //publisher
-    publisher_timestep_ = create_publisher<std_msgs::msg::UInt64>("~/timestep", 10);
+    publisher_timestep_ = create_publisher<std_msgs::msg::UInt64>("/timestep", 10);
     publisher_walls_ = create_publisher<visualization_msgs::msg::MarkerArray>(
-      "~/walls",
+      "/walls",
       qos_policy);
     publisher_obstacles_ = create_publisher<visualization_msgs::msg::MarkerArray>(
-      "~/obstacles",
+      "/obstacles",
       qos_policy);
     pub_sensor_ = create_publisher<nuturtlebot_msgs::msg::SensorData>("red/sensor_data", 10);
     pub_path_ = create_publisher<nav_msgs::msg::Path>("red/path", 10);
@@ -118,12 +129,12 @@ public:
     );
     //service
     reset_service = create_service<std_srvs::srv::Empty>(
-      "~/reset", std::bind(
+      "/reset", std::bind(
         &Nusim::reset_callback, this,
         std::placeholders::_1, std::placeholders::_2));
 
     teleport_service = create_service<nusim::srv::Teleport>(
-      "~/teleport", std::bind(
+      "/teleport", std::bind(
         &Nusim::teleport_callback, this,
         std::placeholders::_1, std::placeholders::_2));
 
@@ -151,6 +162,9 @@ public:
     obstacle_y_ = get_parameter("obstacles/y").as_double_array();
     std::vector<double> k = get_parameter("obstacles/x").as_double_array();
     obstacle_radius_ = get_parameter("obstacles/radius").as_double();
+    draw_only_ = get_parameter("draw_only").as_bool();
+    input_noise = get_parameter("input_noise").as_double();
+    slip_fraction = get_parameter("slip_fraction").as_double();
     change_position(x_, y_, theta_);
     robot_.initialize(
       track_width_, wheel_radius_,
@@ -174,19 +188,32 @@ private:
   /// \param msg [nuturtlebot_msgs::msg::WheelCommands] the wheel commands of the robot
   void wheel_cmd_callback(const nuturtlebot_msgs::msg::WheelCommands::SharedPtr msg)
   {
+
+    auto new_left_wheel_joint = (msg->left_velocity * motor_cmd_per_rad_sec_ ) / rate;
+    auto new_right_wheel_joint = (msg->right_velocity * motor_cmd_per_rad_sec_ ) / rate;
+
+    if(!turtlelib::almost_equal(new_left_wheel_joint, 0.0)){
+      new_left_wheel_joint += input_noise;
+      new_left_wheel_joint *= (1 + slip_fraction);
+    }
+    if(!turtlelib::almost_equal(new_right_wheel_joint, 0.0)){
+      new_right_wheel_joint += input_noise;
+      new_right_wheel_joint *= (1 + slip_fraction);
+    }
+
     //Save the wheel commands
-    left_wheel_joint += (static_cast<double>(msg->left_velocity) );
-    right_wheel_joint += (static_cast<double>(msg->right_velocity) );
+    left_wheel_joint += (new_left_wheel_joint * encoder_ticks_per_rev_sec_ );
+    right_wheel_joint += (new_right_wheel_joint * encoder_ticks_per_rev_sec_);
     //Change to sensor data
     
-    sensor_data.left_encoder = left_wheel_joint * motor_cmd_per_rad_sec_ * (encoder_ticks_per_rev_sec_ / rate);
-    sensor_data.right_encoder = right_wheel_joint * motor_cmd_per_rad_sec_ * (encoder_ticks_per_rev_sec_ / rate);
+    sensor_data.left_encoder = left_wheel_joint;
+    sensor_data.right_encoder = right_wheel_joint;
 
 
     //reverse the wheel commands to get the robot to move
 
-    wheel_vels.phi_l = (msg->left_velocity * motor_cmd_per_rad_sec_ ) / rate;
-    wheel_vels.phi_r = (msg->right_velocity * motor_cmd_per_rad_sec_ ) / rate;
+    wheel_vels.phi_l = new_left_wheel_joint;
+    wheel_vels.phi_r = new_right_wheel_joint;
     //DO FK
     robot_.forward_kinematics(wheel_vels);
     //Change x_,y_,theta_
@@ -245,25 +272,6 @@ private:
     theta_ = request->theta;
     RCLCPP_INFO(get_logger(), "Teleporting robot");
     change_position(x_, y_, theta_);
-  }
-  /// \brief callback for the timer to publish the current time step
-  void timer_callback()
-  {
-    auto message = std_msgs::msg::UInt64();
-    message.data = count_++;
-    // RCLCPP_INFO_STREAM(get_logger(), "Publishing: '" << message.data << "'");
-    publisher_timestep_->publish(message);
-    t.header.stamp = get_clock()->now();
-    tf_broadcaster_->sendTransform(t);
-
-    sensor_data.stamp = get_clock()->now();
-    //Publish the sensor data
-    pub_sensor_->publish(sensor_data);
-    //Publish the path
-    red_path.header.stamp = get_clock()->now();
-    red_path.header.frame_id = "nusim/world";
-    pub_path_->publish(red_path);
-
   }
   /// \brief creates a wall marker
   visualization_msgs::msg::Marker make_wall(int id, double scale[], const double pose[])
@@ -350,6 +358,26 @@ private:
     }
     publisher_walls_->publish(walls);
   }
+  /// \brief callback for the timer to publish the current time step
+  void timer_callback()
+  {
+    auto message = std_msgs::msg::UInt64();
+    message.data = count_++;
+    publisher_timestep_->publish(message);
+
+    if (!draw_only_) {
+      //Publish the transform
+      t.header.stamp = get_clock()->now();
+      tf_broadcaster_->sendTransform(t);
+      //Publish the sensor data
+      sensor_data.stamp = get_clock()->now();
+      pub_sensor_->publish(sensor_data);
+      //Publish the path
+      red_path.header.stamp = get_clock()->now();
+      red_path.header.frame_id = "nusim/world";
+      pub_path_->publish(red_path);
+    }
+  }
 
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service;
   rclcpp::Service<nusim::srv::Teleport>::SharedPtr teleport_service;
@@ -381,6 +409,9 @@ private:
   double track_width_ = 0.0;
   double motor_cmd_per_rad_sec_ = 0.0;
   double encoder_ticks_per_rev_sec_ = 0.0;
+  bool draw_only_ = false;
+  double input_noise = 0.0;
+  double slip_fraction = 0.0;
   turtlelib::Diff_drive robot_;
   turtlelib::Wheel_state wheel_vels;
   nuturtlebot_msgs::msg::SensorData sensor_data;

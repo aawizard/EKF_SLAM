@@ -51,12 +51,12 @@
     - [x] Task F.1
     - [x] Task F.2
     - [x] Task F.5
-    - [ ] Task F.6
+    - [x] Task F.6
 
 - [ ] The Visualization - Task V
     - [ ] Task V.1
-    - [ ] Task V.2
-    - [ ] Task V.3
+    - [x] Task V.2
+    - [x] Task V.3
     - [ ] Task V.4
 
 - [ ] SLAM - Task L

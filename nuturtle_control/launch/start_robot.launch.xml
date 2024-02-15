@@ -21,6 +21,8 @@
         <node pkg="nusim" exec="nusim" name="nusim" >
             <param from="$(find-pkg-share nusim)/config/basic_world.yaml" />
             <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
+            <param name="input_noise" value="0.001"/>
+            <param name="slip_friction" value="0.001"/>
             
         </node>
         <node pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share nuturtle_control)/config/nusim_odom.rviz -f nusim/world" name= 'rviz2' if="$(eval '\'$(var use_rviz)\' == \'true\'')"/>
@@ -50,6 +52,7 @@
             <arg name="use_rviz" value="false" />
             <arg name="use_jsp" value="false"/>
         </include>
+        <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id odom "/>
         
     </group>
 
@@ -58,8 +61,7 @@
         <node name="numsr_turtlebot" pkg="numsr_turtlebot" exec="numsr_turtlebot"/>
 
     <node name="turtle_control" pkg="nuturtle_control" exec="turtle_control" >
-        <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
-        <!-- <remap from="wheel_cmd" to="red/wheel_cmd" /> -->
+        <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml"/>
         <remap from="joint_states" to="blue/joint_states"/>
     </node>
     <node name="odometry" pkg="nuturtle_control" exec="odometry" >
@@ -70,7 +72,7 @@
         <param name="wheel_right" value="wheel_right_joint"/>
         <remap from="joint_states" to="blue/joint_states"/>
     </node>
-    <include file="$(find-pkg-share rtf_lds_lidar)/launch/hlds_laser.launch.py">
+    <include file="$(find-pkg-share hls_lfcd_lds_driver)/launch/hlds_laser.launch.py">
     <arg name="frame_id" value="blue/base_scan"/>
     <arg name="port" value="/dev/ttyUSB0"/>
     </include>
@@ -83,7 +85,12 @@
             <arg name="use_rviz" value="false" />
             <arg name="use_jsp" value="false"/>
         </include>
-        
+        <node pkg="nusim" exec="nusim" name="nuwall" >
+            <param from="$(find-pkg-share nusim)/config/basic_world.yaml" />
+            <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
+            <param name="draw_only" value="true"/>
+        </node>
+        <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id odom "/>
         
     </group>
 
@@ -92,5 +99,5 @@
 
 
 
-    <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id odom "/>
+    
 </launch>

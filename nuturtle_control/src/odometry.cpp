@@ -10,6 +10,7 @@
 ///    \param track_width (double): distance between the wheels[m]
 ///PUBLISHES:
 ///    \param odom (nav_msgs::msg::Odometry): odometry of the robot
+///    \param blue/path (nav_msgs::msg::Path): path of the robot
 ///SUBSCRIBES:
 ///    \param joint_states (sensor_msgs::msg::JointState): joint states of the robot
 ///SERVICES:
