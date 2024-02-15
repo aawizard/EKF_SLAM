@@ -22,6 +22,7 @@
 ///     pub topic: ~/walls [visualization_msgs::msg::MarkerArray] the walls of the arena
 ///     pub topic: ~/obstacles [visualization_msgs::msg::MarkerArray] the obstacles in the arena
 ///     pub topic: red/sensor_data [nuturtlebot_msgs::msg::SensorData] the sensor data of the robot
+///     pub topic: red/path [nav_msgs::msg::Path] the path of the robot
 ///SERVICES:
 ///     srv service: ~/reset [std_srvs::srv::Empty] resets the time step and teleports the robot to the initial pose
 ///     srv service: ~/teleport [nusim::srv::Teleport] teleports the robot to a new pose
@@ -110,6 +111,7 @@ public:
       "~/obstacles",
       qos_policy);
     pub_sensor_ = create_publisher<nuturtlebot_msgs::msg::SensorData>("red/sensor_data", 10);
+    pub_path_ = create_publisher<nav_msgs::msg::Path>("red/path", 10);
     //subscriber
     sub_wheel_ = create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
       "red/wheel_cmd", 10, std::bind(&Nusim::wheel_cmd_callback, this, std::placeholders::_1)
@@ -218,6 +220,18 @@ private:
     t.transform.rotation.z = q.z();
     t.transform.rotation.w = q.w();
     // tf_broadcaster_->sendTransform(t);
+
+    robot_pose.header.frame_id = "nusim/world";
+    robot_pose.header.stamp = get_clock()->now();
+    robot_pose.pose.position.x = x;
+    robot_pose.pose.position.y = y;
+    robot_pose.pose.position.z = 0.0;
+    robot_pose.pose.orientation.x = q.x();
+    robot_pose.pose.orientation.y = q.y();
+    robot_pose.pose.orientation.z = q.z();
+    robot_pose.pose.orientation.w = q.w();
+    red_path.poses.push_back(robot_pose);
+
   }
   /// \brief callback for the teleport service to teleport the robot to a new pose
   /// \param request [nusim/srv/Teleport/Request] the request for the service
@@ -245,6 +259,10 @@ private:
     sensor_data.stamp = get_clock()->now();
     //Publish the sensor data
     pub_sensor_->publish(sensor_data);
+    //Publish the path
+    red_path.header.stamp = get_clock()->now();
+    red_path.header.frame_id = "nusim/world";
+    pub_path_->publish(red_path);
 
   }
   /// \brief creates a wall marker
@@ -341,8 +359,10 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_walls_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_obstacles_;
   rclcpp::Publisher<nuturtlebot_msgs::msg::SensorData>::SharedPtr pub_sensor_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   rclcpp::Subscription<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr sub_wheel_;
   geometry_msgs::msg::TransformStamped t = geometry_msgs::msg::TransformStamped();
+  geometry_msgs::msg::PoseStamped robot_pose = geometry_msgs::msg::PoseStamped();
 
   int rate = 200;
   double x_ = 0.0;
@@ -364,6 +384,7 @@ private:
   turtlelib::Diff_drive robot_;
   turtlelib::Wheel_state wheel_vels;
   nuturtlebot_msgs::msg::SensorData sensor_data;
+  nav_msgs::msg::Path red_path;
 
   std::vector<double> obstacle_x_ = {0.25, 0.35};
   std::vector<double> obstacle_y_ = {0.25, -0.25};

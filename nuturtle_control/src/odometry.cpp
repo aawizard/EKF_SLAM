@@ -28,6 +28,8 @@
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "nuturtle_control/srv/init_config.hpp"
 #include "turtlelib/diff_drive.hpp"
+#include "nav_msgs/msg/path.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 
 using namespace std::chrono_literals;
 // using namespace turtlelib;
@@ -78,6 +80,7 @@ public:
       "joint_states", 10, std::bind(&Odometry::joint_state_callback, this, std::placeholders::_1));
 
     pub_odom_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+    pub_path_ = create_publisher<nav_msgs::msg::Path>("blue/path", 10);
 
     init_config_service = this->create_service<nuturtle_control::srv::InitConfig>(
       "/initial_pose", std::bind(
@@ -96,11 +99,15 @@ public:
 private:
   void joint_state_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
   {
+
+    // Change in wheel joint position
     turtlelib::Wheel_state wheel_vels;
     wheel_vels.phi_l = (msg->position.at(0)  - left_wheel_joint);
     wheel_vels.phi_r = (msg->position.at(1) - right_wheel_joint);
     turtlelib::Twist2D twist = robot.Twist(wheel_vels);
     robot.forward_kinematics(wheel_vels);
+
+    // Publish odometry
     turtlelib::Transform2D Tsb_ = robot.get_robot_pos();
     odom.pose.pose.position.x = Tsb_.translation().x;
     odom.pose.pose.position.y = Tsb_.translation().y;
@@ -110,19 +117,36 @@ private:
     odom.pose.pose.orientation.y = q.y();
     odom.pose.pose.orientation.z = q.z();
     odom.pose.pose.orientation.w = q.w();
-
     odom.twist.twist.linear.x = twist.x;
     odom.twist.twist.angular.z = twist.omega;
     pub_odom_->publish(odom);
+
+    // Publish Transform
     odom_tf_.header.stamp = this->get_clock()->now();
     odom_tf_.transform.translation.x = Tsb_.translation().x;
     odom_tf_.transform.translation.y = Tsb_.translation().y;
-    q.setRPY(0, 0, Tsb_.rotation() );
     odom_tf_.transform.rotation.x = q.x();
     odom_tf_.transform.rotation.y = q.y();
     odom_tf_.transform.rotation.z = q.z();
     odom_tf_.transform.rotation.w = q.w();
     tf_broadcaster_->sendTransform(odom_tf_);
+
+    // Publish path
+    robot_path_.header.stamp = this->get_clock()->now();
+    robot_path_.header.frame_id = "odom";
+    geometry_msgs::msg::PoseStamped robot_pose_;    
+    robot_pose_.header.stamp = this->get_clock()->now();
+    robot_pose_.header.frame_id = "odom";
+    robot_pose_.pose.position.x = Tsb_.translation().x;
+    robot_pose_.pose.position.y = Tsb_.translation().y;
+    robot_pose_.pose.orientation.x = q.x();
+    robot_pose_.pose.orientation.y = q.y();
+    robot_pose_.pose.orientation.z = q.z();
+    robot_pose_.pose.orientation.w = q.w();
+    robot_path_.poses.push_back(robot_pose_);
+    pub_path_->publish(robot_path_);
+
+    // Update wheel joint position
     left_wheel_joint = msg->position.at(0);
     right_wheel_joint = msg->position.at(1);
   }
@@ -144,11 +168,13 @@ private:
   nav_msgs::msg::Odometry odom;
   turtlelib::Diff_drive robot;
   geometry_msgs::msg::TransformStamped odom_tf_;
+  nav_msgs::msg::Path robot_path_;
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_joint_state_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp::Service<nuturtle_control::srv::InitConfig>::SharedPtr init_config_service;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
 
 };
 

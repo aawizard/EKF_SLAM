@@ -18,6 +18,7 @@ find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nusim REQUIRED)
 find_package(nuturtle_description REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}_srv
   "srv/InitConfig.srv"
@@ -34,7 +35,7 @@ add_executable(odometry src/odometry.cpp)
 add_executable(circle src/circle.cpp)
 
 ament_target_dependencies(turtle_control rclcpp geometry_msgs turtlelib nuturtlebot_msgs sensor_msgs)
-ament_target_dependencies(odometry rclcpp geometry_msgs turtlelib  nav_msgs tf2 tf2_ros sensor_msgs)
+ament_target_dependencies(odometry rclcpp geometry_msgs turtlelib  nav_msgs tf2 tf2_ros sensor_msgs nav_msgs)
 ament_target_dependencies(circle rclcpp geometry_msgs turtlelib std_srvs sensor_msgs)
 
 
