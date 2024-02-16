@@ -21,12 +21,16 @@
 ///     \param draw_only: if true, only draw the arena and do not simulate the robot
 ///     \param input_noise: the noise in the input
 ///     \param slip_fraction: the fraction of slip in the robot
+///     \param collision_radius: the radius of the robot for collision detection
+///     \param max_range: the maximum range of the lidar sensor
+///     \param basic_sensor_variance: the variance of the basic sensor
 ///PUBLISHES:
 ///     pub topic: ~/timestep [std_msgs::msg::UInt64] the current time step
 ///     pub topic: ~/walls [visualization_msgs::msg::MarkerArray] the walls of the arena
 ///     pub topic: ~/obstacles [visualization_msgs::msg::MarkerArray] the obstacles in the arena
 ///     pub topic: red/sensor_data [nuturtlebot_msgs::msg::SensorData] the sensor data of the robot
 ///     pub topic: red/path [nav_msgs::msg::Path] the path of the robot
+///     pub topic: /fake_sensor [visualization_msgs::msg::MarkerArray] the fake sensor data of the robot
 ///SERVICES:
 ///     srv service: ~/reset [std_srvs::srv::Empty] resets the time step and teleports the robot to the initial pose
 ///     srv service: ~/teleport [nusim::srv::Teleport] teleports the robot to a new pose
@@ -59,7 +63,7 @@
 #include <nuturtlebot_msgs/msg/sensor_data.hpp>
 #include <rclcpp/qos.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include<random>
+#include <random>
 
 
 using namespace std::chrono_literals;
@@ -87,6 +91,9 @@ using namespace std::chrono_literals;
 /// \param draw_only: if true, only draw the arena and do not simulate the robot
 /// \param input_noise: the noise in the input
 /// \param slip_fraction: the fraction of slip in the robot
+/// \param collision_radius: the radius of the robot for collision detection
+/// \param max_range: the maximum range of the lidar sensor
+/// \param basic_sensor_variance: the variance of the basic sensor
 class Nusim : public rclcpp::Node
 {
 public:
@@ -112,9 +119,13 @@ public:
     declare_parameter("draw_only", false);
     declare_parameter("input_noise", 0.0);
     declare_parameter("slip_fraction", 0.0);
+    declare_parameter("collision_radius", 0.05);
+    declare_parameter("max_range", 0.5);
+    declare_parameter("basic_sensor_variance", 0.01);
 
     rate = get_parameter("rate").as_int();
     rclcpp::QoS qos_policy = rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
+    // rclcpp::QoS sensor_qos = rclcpp::QoS(rclcpp::KeepLast(10)).
     //publisher
     publisher_timestep_ = create_publisher<std_msgs::msg::UInt64>("/timestep", 10);
     publisher_walls_ = create_publisher<visualization_msgs::msg::MarkerArray>(
@@ -122,6 +133,9 @@ public:
       qos_policy);
     publisher_obstacles_ = create_publisher<visualization_msgs::msg::MarkerArray>(
       "/obstacles",
+      qos_policy);
+    publisher_fake_sensor_ = create_publisher<visualization_msgs::msg::MarkerArray>(
+      "/fake_sensor",
       qos_policy);
     pub_sensor_ = create_publisher<nuturtlebot_msgs::msg::SensorData>("red/sensor_data", 10);
     pub_path_ = create_publisher<nav_msgs::msg::Path>("red/path", 10);
@@ -143,6 +157,8 @@ public:
     //timer
     timer_ = create_wall_timer(
       1000ms / rate, std::bind(&Nusim::timer_callback, this));
+    timer_sensor_ = create_wall_timer(
+      200ms, std::bind(&Nusim::timer2_callback, this));
     //tf
     tf_broadcaster_ =
       std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -167,6 +183,9 @@ public:
     draw_only_ = get_parameter("draw_only").as_bool();
     input_noise = get_parameter("input_noise").as_double();
     slip_fraction = get_parameter("slip_fraction").as_double();
+    collision_radius = get_parameter("collision_radius").as_double();
+    max_range = get_parameter("max_range").as_double();
+    basic_sensor_variance = get_parameter("basic_sensor_variance").as_double();
     change_position(x_, y_, theta_);
     robot_.initialize(
       track_width_, wheel_radius_,
@@ -196,19 +215,19 @@ private:
     std::normal_distribution<> d(0, input_noise);
     std::uniform_real_distribution<> u(-slip_fraction, slip_fraction);
     double slip_noise = u(get_random());
-    
-    if(!turtlelib::almost_equal(new_left_wheel_joint, 0.0)){
+
+    if (!turtlelib::almost_equal(new_left_wheel_joint, 0.0)) {
       new_left_wheel_joint += d(get_random());
     }
-    if(!turtlelib::almost_equal(new_right_wheel_joint, 0.0)){
+    if (!turtlelib::almost_equal(new_right_wheel_joint, 0.0)) {
       new_right_wheel_joint += d(get_random());
     }
 
     //Save the wheel commands
     left_wheel_joint += (new_left_wheel_joint * encoder_ticks_per_rev_sec_ );
-    right_wheel_joint += (new_right_wheel_joint * encoder_ticks_per_rev_sec_); 
+    right_wheel_joint += (new_right_wheel_joint * encoder_ticks_per_rev_sec_);
     //Change to sensor data
-    
+
     sensor_data.left_encoder = left_wheel_joint;
     sensor_data.right_encoder = right_wheel_joint;
 
@@ -381,23 +400,76 @@ private:
       pub_path_->publish(red_path);
     }
   }
+  /// \brief callback for the timer to publish the current time step
+  void timer2_callback()
+  {
+
+    if (!draw_only_) {
+      auto lidar_sensor = visualization_msgs::msg::MarkerArray();
+      auto obstacle = visualization_msgs::msg::Marker();
+      obstacle.header.frame_id = "red/base_footprint";
+      obstacle.header.stamp = get_clock()->now();
+      obstacle.type = visualization_msgs::msg::Marker::CYLINDER;
+
+      for (int i = 0; i < int(obstacle_x_.size()); ++i) {
+        obstacle.id = i;
+        if (dist(i)) {
+          std::normal_distribution<> d(0, basic_sensor_variance);
+          auto obs_noise = d(get_random());
+          obstacle.action = visualization_msgs::msg::Marker::ADD;
+          obstacle.color.r = 1.0;
+          obstacle.color.g = 1.0;
+          obstacle.color.a = 1.0;
+          obstacle.frame_locked = false;
+          obstacle.scale.x = obstacle_radius_ * 2 + obs_noise;
+          obstacle.scale.y = obstacle_radius_ * 2 + obs_noise;
+          obstacle.scale.z = wall_height;
+          const turtlelib::Transform2D Two(turtlelib::Vector2D{obstacle_x_[i], obstacle_y_[i]}, 0);
+          const turtlelib::Vector2D sen_pos = (robot_.get_robot_pos().inv() * Two).translation();
+          obstacle.pose.position.x = sen_pos.x + obs_noise;
+          obstacle.pose.position.y = sen_pos.y + obs_noise;
+          obstacle.pose.position.z = wall_height / 2;
+        } else {
+          obstacle.action = visualization_msgs::msg::Marker::DELETE;
+        }
+        lidar_sensor.markers.push_back(obstacle);
+      }
+      publisher_fake_sensor_->publish(lidar_sensor);
+    }
+  }
 
   /// \brief Random number generator
-   std::mt19937 & get_random()
+  std::mt19937 & get_random()
   {
     // static variables inside a function are created once and persist for the remainder of the program
-    static std::random_device rd{}; 
+    static std::random_device rd{};
     static std::mt19937 mt{rd()};
     return mt;
+  }
+
+  /// \brief Distance between the robot and the obstacle
+  bool dist(int i)
+  {
+    double x = obstacle_x_[i];
+    double y = obstacle_y_[i];
+    double d = sqrt(pow(x - x_, 2) + pow(y - y_, 2));
+    if (d < max_range - obstacle_radius_ - collision_radius) {
+      x_y_.at(0) = x_ - x;
+      x_y_.at(1) = y_ - y;
+      return true;
+    }
+    return false;
   }
 
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service;
   rclcpp::Service<nusim::srv::Teleport>::SharedPtr teleport_service;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr timer_sensor_;
   rclcpp::Publisher<std_msgs::msg::UInt64>::SharedPtr publisher_timestep_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_walls_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_obstacles_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_fake_sensor_;
   rclcpp::Publisher<nuturtlebot_msgs::msg::SensorData>::SharedPtr pub_sensor_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   rclcpp::Subscription<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr sub_wheel_;
@@ -424,6 +496,10 @@ private:
   bool draw_only_ = false;
   double input_noise = 0.0;
   double slip_fraction = 0.0;
+  double collision_radius = 0.0;
+  double max_range = 0.0;
+  double basic_sensor_variance = 0.0;
+  std::vector<double> x_y_ = {0.0, 0.0};
   turtlelib::Diff_drive robot_;
   turtlelib::Wheel_state wheel_vels;
   nuturtlebot_msgs::msg::SensorData sensor_data;

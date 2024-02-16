@@ -4,8 +4,10 @@
     x0: 0.0
     y0: 0.0
     theta0: 0.0
-    arena_x_length: 3.0
-    arena_y_length: 3.0
+    arena_x_length: 5.0
+    arena_y_length: 5.0
     obstacles/x: [-0.5, 0.8, 0.4]
     obstacles/y: [-0.7, -0.8, 0.8]
     obstacles/radius: 0.03
+    max_range: 1.0
+    basic_sensor_variance: 0.01

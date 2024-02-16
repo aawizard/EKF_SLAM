@@ -29,8 +29,8 @@
     - [x] Task C.6
     - [x] Task C.7
     - [x] Task C.8
-    - [ ] Task C.9
-    - [ ] Task C.10
+    - [x] Task C.9
+    - [x] Task C.10
     - [ ] Task C.11
     - [ ] Task C.12
 

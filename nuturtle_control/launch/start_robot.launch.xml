@@ -21,8 +21,8 @@
         <node pkg="nusim" exec="nusim" name="nusim" >
             <param from="$(find-pkg-share nusim)/config/basic_world.yaml" />
             <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
-            <param name="input_noise" value="0.01"/>
-            <param name="slip_fraction" value="0.01"/>
+            <param name="input_noise" value="0.001"/>
+            <param name="slip_fraction" value="0.001"/>
             
         </node>
         <node pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share nuturtle_control)/config/nusim_odom.rviz -f nusim/world" name= 'rviz2' if="$(eval '\'$(var use_rviz)\' == \'true\'')"/>

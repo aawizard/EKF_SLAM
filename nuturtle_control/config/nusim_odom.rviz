@@ -20,6 +20,9 @@ Panels:
         - /Path2
         - /LaserScan1
         - /LaserScan1/Topic1
+        - /MarkerArray3
+        - /MarkerArray3/Status1
+        - /MarkerArray3/Topic1
       Splitter Ratio: 0.5
     Tree Height: 1106
   - Class: rviz_common/Selection
@@ -395,13 +398,25 @@ Visualization Manager:
       Style: Flat Squares
       Topic:
         Depth: 5
-        Durability Policy: Volatile
+        Durability Policy: Transient Local
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Best Effort
         Value: /scan
       Use Fixed Frame: true
       Use rainbow: true
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        "": true
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /fake_sensor
       Value: true
   Enabled: true
   Global Options:
