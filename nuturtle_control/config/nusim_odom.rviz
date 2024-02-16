@@ -21,7 +21,6 @@ Panels:
         - /LaserScan1
         - /LaserScan1/Topic1
         - /MarkerArray3
-        - /MarkerArray3/Status1
         - /MarkerArray3/Topic1
       Splitter Ratio: 0.5
     Tree Height: 1106
@@ -181,10 +180,10 @@ Visualization Manager:
         red/imu_link:
           Value: false
         red/wheel_left_link:
-          Value: false
+          Value: true
         red/wheel_right_link:
-          Value: false
-      Marker Scale: 1
+          Value: true
+      Marker Scale: 0.4000000059604645
       Name: TF
       Show Arrows: true
       Show Axes: true

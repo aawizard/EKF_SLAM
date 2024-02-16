@@ -134,10 +134,10 @@ private:
 
     // Publish path
     robot_path_.header.stamp = this->get_clock()->now();
-    robot_path_.header.frame_id = "odom";
+    robot_path_.header.frame_id = odom_id;
     geometry_msgs::msg::PoseStamped robot_pose_;    
     robot_pose_.header.stamp = this->get_clock()->now();
-    robot_pose_.header.frame_id = "odom";
+    robot_pose_.header.frame_id = odom_id;
     robot_pose_.pose.position.x = Tsb_.translation().x;
     robot_pose_.pose.position.y = Tsb_.translation().y;
     robot_pose_.pose.orientation.x = q.x();

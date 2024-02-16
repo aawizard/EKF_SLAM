@@ -238,10 +238,15 @@ private:
     wheel_vels.phi_r = new_right_wheel_joint * (1 + slip_noise);
     //DO FK
     robot_.forward_kinematics(wheel_vels);
+    //Check for collision
+    // Update robot position
+    check_collision();
     //Change x_,y_,theta_
     x_ = robot_.get_robot_pos().translation().x;
     y_ = robot_.get_robot_pos().translation().y;
     theta_ = robot_.get_robot_pos().rotation();
+
+
     //Change the position of tf
     change_position(x_, y_, theta_);
 
@@ -413,7 +418,7 @@ private:
 
       for (int i = 0; i < int(obstacle_x_.size()); ++i) {
         obstacle.id = i;
-        if (dist(i)) {
+        if (dist(i, max_range)) {
           std::normal_distribution<> d(0, basic_sensor_variance);
           auto obs_noise = d(get_random());
           obstacle.action = visualization_msgs::msg::Marker::ADD;
@@ -448,18 +453,31 @@ private:
   }
 
   /// \brief Distance between the robot and the obstacle
-  bool dist(int i)
+  bool dist(int i, double range)
   {
     double x = obstacle_x_[i];
     double y = obstacle_y_[i];
-    double d = sqrt(pow(x - x_, 2) + pow(y - y_, 2));
-    if (d < max_range - obstacle_radius_ - collision_radius) {
-      x_y_.at(0) = x_ - x;
-      x_y_.at(1) = y_ - y;
+    auto r = robot_.get_robot_pos().translation();
+    double d = sqrt(pow(x - r.x, 2) + pow(y - r.y, 2));
+
+    if (range == 0.0 && d < obstacle_radius_ + collision_radius) {
+      return true;
+    } else if (d < range - obstacle_radius_ - collision_radius) {
       return true;
     }
     return false;
   }
+  /// \brief Check for collision
+  void check_collision()
+  {
+    for (int i = 0; i < int(obstacle_x_.size()); ++i) {
+      if (dist(i, 0.0)) {
+        robot_.set_pos(turtlelib::Transform2D(turtlelib::Vector2D{x_, y_}, theta_));
+        return;
+      }
+    }
+  }
+
 
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service;
   rclcpp::Service<nusim::srv::Teleport>::SharedPtr teleport_service;
@@ -499,7 +517,6 @@ private:
   double collision_radius = 0.0;
   double max_range = 0.0;
   double basic_sensor_variance = 0.0;
-  std::vector<double> x_y_ = {0.0, 0.0};
   turtlelib::Diff_drive robot_;
   turtlelib::Wheel_state wheel_vels;
   nuturtlebot_msgs::msg::SensorData sensor_data;

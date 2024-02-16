@@ -45,7 +45,7 @@
     - [x] Task E.3
     - [x] Task E.4
     - [x] Task E.5
-    - [ ] Task E.6
+    - [x] Task E.6
 
 - [ ] The Real Robot - Task F
     - [x] Task F.1
