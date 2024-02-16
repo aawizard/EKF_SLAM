@@ -59,6 +59,8 @@
 #include <nuturtlebot_msgs/msg/sensor_data.hpp>
 #include <rclcpp/qos.hpp>
 #include <nav_msgs/msg/path.hpp>
+#include<random>
+
 
 using namespace std::chrono_literals;
 
@@ -191,19 +193,20 @@ private:
 
     auto new_left_wheel_joint = (msg->left_velocity * motor_cmd_per_rad_sec_ ) / rate;
     auto new_right_wheel_joint = (msg->right_velocity * motor_cmd_per_rad_sec_ ) / rate;
-
+    std::normal_distribution<> d(0, input_noise);
+    std::uniform_real_distribution<> u(-slip_fraction, slip_fraction);
+    double slip_noise = u(get_random());
+    
     if(!turtlelib::almost_equal(new_left_wheel_joint, 0.0)){
-      new_left_wheel_joint += input_noise;
-      new_left_wheel_joint *= (1 + slip_fraction);
+      new_left_wheel_joint += d(get_random());
     }
     if(!turtlelib::almost_equal(new_right_wheel_joint, 0.0)){
-      new_right_wheel_joint += input_noise;
-      new_right_wheel_joint *= (1 + slip_fraction);
+      new_right_wheel_joint += d(get_random());
     }
 
     //Save the wheel commands
     left_wheel_joint += (new_left_wheel_joint * encoder_ticks_per_rev_sec_ );
-    right_wheel_joint += (new_right_wheel_joint * encoder_ticks_per_rev_sec_);
+    right_wheel_joint += (new_right_wheel_joint * encoder_ticks_per_rev_sec_); 
     //Change to sensor data
     
     sensor_data.left_encoder = left_wheel_joint;
@@ -212,8 +215,8 @@ private:
 
     //reverse the wheel commands to get the robot to move
 
-    wheel_vels.phi_l = new_left_wheel_joint;
-    wheel_vels.phi_r = new_right_wheel_joint;
+    wheel_vels.phi_l = new_left_wheel_joint * (1 + slip_noise);
+    wheel_vels.phi_r = new_right_wheel_joint * (1 + slip_noise);
     //DO FK
     robot_.forward_kinematics(wheel_vels);
     //Change x_,y_,theta_
@@ -377,6 +380,15 @@ private:
       red_path.header.frame_id = "nusim/world";
       pub_path_->publish(red_path);
     }
+  }
+
+  /// \brief Random number generator
+   std::mt19937 & get_random()
+  {
+    // static variables inside a function are created once and persist for the remainder of the program
+    static std::random_device rd{}; 
+    static std::mt19937 mt{rd()};
+    return mt;
   }
 
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_service;
