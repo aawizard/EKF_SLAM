@@ -17,6 +17,7 @@ find_package(visualization_msgs REQUIRED)
 find_package(nuturtlebot_msgs REQUIRED)
 find_package(turtlelib REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 # find_package(nuturtlebot_msgs REQUIRED)
 find_package(Armadillo)
 
@@ -30,11 +31,15 @@ rosidl_generate_interfaces(${PROJECT_NAME}_srv
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
 
 add_executable(nusim src/nusim.cpp)
+add_executable(test1 src/test.cpp)
 include_directories(include ${ARMADILLO_INCLUDE_DIRS})
-ament_target_dependencies(nusim rclcpp std_msgs std_srvs tf2 tf2_ros visualization_msgs nuturtlebot_msgs turtlelib nav_msgs)
+ament_target_dependencies(nusim rclcpp std_msgs std_srvs tf2 tf2_ros visualization_msgs nuturtlebot_msgs turtlelib nav_msgs sensor_msgs)
+ament_target_dependencies(test1 rclcpp sensor_msgs)
 target_link_libraries(nusim turtlelib::turtlelib ${cpp_typesupport_target} ${ARMADILLO_LIBRARIES})
+target_link_libraries(test1 turtlelib::turtlelib ${cpp_typesupport_target})
 install(TARGETS
   nusim
+  test1
   DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY

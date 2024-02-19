@@ -4,6 +4,7 @@
 ///         It publishes the current time step and the current pose of the robot.
 ///         It also provides a service to reset the time step and teleport the robot to a new pose.
 ///         The arena for the robot is shown in rviz with walls and obstacles.
+///         The robot simulates the sensor data and publishes it to the /fake_sensor topic.
 ///PARAMETERS:
 ///     \param rate: the rate at which the time step is published [Hz]
 ///     \param x0: the initial x position of the robot [m]
@@ -24,6 +25,8 @@
 ///     \param collision_radius: the radius of the robot for collision detection
 ///     \param max_range: the maximum range of the lidar sensor
 ///     \param basic_sensor_variance: the variance of the basic sensor
+///     \param laser_min_range: the minimum range of the lidar sensor[m]
+///     \param laser_max_range: the maximum range of the lidar sensor[m]
 ///PUBLISHES:
 ///     pub topic: ~/timestep [std_msgs::msg::UInt64] the current time step
 ///     pub topic: ~/walls [visualization_msgs::msg::MarkerArray] the walls of the arena
@@ -31,6 +34,7 @@
 ///     pub topic: red/sensor_data [nuturtlebot_msgs::msg::SensorData] the sensor data of the robot
 ///     pub topic: red/path [nav_msgs::msg::Path] the path of the robot
 ///     pub topic: /fake_sensor [visualization_msgs::msg::MarkerArray] the fake sensor data of the robot
+///     pub topic: /scan [sensor_msgs::msg::LaserScan] the scan data of the robot
 ///SERVICES:
 ///     srv service: ~/reset [std_srvs::srv::Empty] resets the time step and teleports the robot to the initial pose
 ///     srv service: ~/teleport [nusim::srv::Teleport] teleports the robot to a new pose
@@ -57,6 +61,7 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include <tf2_ros/transform_broadcaster.h>
 #include "nusim/srv/teleport.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <nuturtlebot_msgs/msg/wheel_commands.hpp>
@@ -94,6 +99,8 @@ using namespace std::chrono_literals;
 /// \param collision_radius: the radius of the robot for collision detection
 /// \param max_range: the maximum range of the lidar sensor
 /// \param basic_sensor_variance: the variance of the basic sensor
+/// \param laser_min_range: the minimum range of the lidar sensor[m]
+/// \param laser_max_range: the maximum range of the lidar sensor[m]
 class Nusim : public rclcpp::Node
 {
 public:
@@ -122,10 +129,14 @@ public:
     declare_parameter("collision_radius", 0.05);
     declare_parameter("max_range", 0.5);
     declare_parameter("basic_sensor_variance", 0.01);
+    declare_parameter("laser_min_range", 0.11999999731779099);
+    declare_parameter("laser_max_range", 3.5);
 
     rate = get_parameter("rate").as_int();
+    draw_only_ = get_parameter("draw_only").as_bool();
+
     rclcpp::QoS qos_policy = rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
-    // rclcpp::QoS sensor_qos = rclcpp::QoS(rclcpp::KeepLast(10)).
+    rclcpp::QoS scan_qos_policy = rclcpp::QoS(rclcpp::KeepLast(20)).durability_volatile().best_effort();
     //publisher
     publisher_timestep_ = create_publisher<std_msgs::msg::UInt64>("/timestep", 10);
     publisher_walls_ = create_publisher<visualization_msgs::msg::MarkerArray>(
@@ -134,11 +145,14 @@ public:
     publisher_obstacles_ = create_publisher<visualization_msgs::msg::MarkerArray>(
       "/obstacles",
       qos_policy);
+    if (!draw_only_) {
     publisher_fake_sensor_ = create_publisher<visualization_msgs::msg::MarkerArray>(
       "/fake_sensor",
       qos_policy);
+    pub_scan_ = create_publisher<sensor_msgs::msg::LaserScan>("/scan", scan_qos_policy);
     pub_sensor_ = create_publisher<nuturtlebot_msgs::msg::SensorData>("red/sensor_data", 10);
     pub_path_ = create_publisher<nav_msgs::msg::Path>("red/path", 10);
+
     //subscriber
     sub_wheel_ = create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
       "red/wheel_cmd", 10, std::bind(&Nusim::wheel_cmd_callback, this, std::placeholders::_1)
@@ -153,6 +167,7 @@ public:
       "/teleport", std::bind(
         &Nusim::teleport_callback, this,
         std::placeholders::_1, std::placeholders::_2));
+    }
 
     //timer
     timer_ = create_wall_timer(
@@ -180,12 +195,13 @@ public:
     obstacle_y_ = get_parameter("obstacles/y").as_double_array();
     std::vector<double> k = get_parameter("obstacles/x").as_double_array();
     obstacle_radius_ = get_parameter("obstacles/radius").as_double();
-    draw_only_ = get_parameter("draw_only").as_bool();
     input_noise = get_parameter("input_noise").as_double();
     slip_fraction = get_parameter("slip_fraction").as_double();
     collision_radius = get_parameter("collision_radius").as_double();
     max_range = get_parameter("max_range").as_double();
     basic_sensor_variance = get_parameter("basic_sensor_variance").as_double();
+    laser_min_range = get_parameter("laser_min_range").as_double();
+    laser_max_range = get_parameter("laser_max_range").as_double();
     change_position(x_, y_, theta_);
     robot_.initialize(
       track_width_, wheel_radius_,
@@ -193,6 +209,7 @@ public:
 
     show_walls();
     make_obstacles();
+
   }
 
 private:
@@ -440,6 +457,92 @@ private:
         lidar_sensor.markers.push_back(obstacle);
       }
       publisher_fake_sensor_->publish(lidar_sensor);
+
+      scan();
+      pub_scan_->publish(scan_data);
+    }
+  }
+/// \brief Get the point at a given angle from the robot
+
+  turtlelib::Vector2D get_point(double angle)
+  {
+    turtlelib::Vector2D p;
+    p.x = max_range * cos(angle);
+    p.y = max_range * sin(angle);
+    return p;
+    // return (robot_.get_robot_pos() * turtlelib::Transform2D(p, 0.0)).translation();
+  }
+
+ 
+
+/// \brief Get the distance to the obstacle
+  double get_obs_dist(turtlelib::Vector2D p)
+  {
+    turtlelib::Vector2D pos = (robot_.get_robot_pos() * turtlelib::Transform2D(p, 0.0)).translation();
+    double d = turtlelib::magnitude(p) + 1.0;
+    double m = (pos.y - y_)/ (pos.x - x_);
+    double c = y_ - m * x_;
+
+    // Check for walls
+    // Wall 1
+    if (pos.x < -arena_x_length_ / 2 ){
+      turtlelib::Vector2D p_C = turtlelib::Vector2D{-arena_x_length_ / 2, m * (-arena_x_length_ / 2) + c};
+      turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
+      d = std::min(d, turtlelib::magnitude(p_c_r));
+    }
+    // Wall 2
+    if (pos.x > arena_x_length_ / 2){
+      turtlelib::Vector2D p_C = turtlelib::Vector2D{arena_x_length_ / 2, m * (arena_x_length_ / 2) + c};
+      turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
+      d = std::min(d, turtlelib::magnitude(p_c_r));
+    }
+    // Wall 3
+    if (pos.y < -arena_y_length_ / 2){
+      turtlelib::Vector2D p_C = turtlelib::Vector2D{(-arena_y_length_ / 2 - c) / m, -arena_y_length_ / 2};
+      turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
+      d = std::min(d, turtlelib::magnitude(p_c_r));
+    } 
+    // Wall 4 
+    if (pos.y > arena_y_length_ / 2){
+      turtlelib::Vector2D p_C = turtlelib::Vector2D{(arena_y_length_ / 2 - c) / m, arena_y_length_ / 2};
+      turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
+      d = std::min(d, turtlelib::magnitude(p_c_r));
+    }
+    // Check for obstacles
+    for (int i = 0; i < int(obstacle_x_.size()); ++i) {
+      if(dist(i, d)){
+        turtlelib::Vector2D p_C = turtlelib::Vector2D{obstacle_x_[i], obstacle_y_[i]};
+        turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
+        d = std::min(d, turtlelib::magnitude(p_c_r));
+      }
+    }
+
+    if(d  > max_range){
+      d = 0.0;
+    }
+    return d;
+
+  }
+
+/// \brief Get the scan data
+  void scan(){
+    scan_data.header.frame_id = "red/base_scan";
+    scan_data.header.stamp = get_clock()->now();
+    scan_data.angle_min = 0;
+    scan_data.angle_max = 2 * turtlelib::PI;
+    scan_data.angle_increment = 0.01745329238474369;
+    scan_data.time_increment = 0.0;
+    scan_data.range_min = laser_min_range;
+    scan_data.range_max = laser_max_range;
+    scan_data.ranges.clear();
+    scan_data.scan_time = 0.2;
+    std::normal_distribution<> d(0, basic_sensor_variance);
+
+    for(double i = scan_data.angle_min; i < scan_data.angle_max; i += scan_data.angle_increment){
+      turtlelib::Vector2D p = get_point(i);
+
+      // double d = turtlelib::magnitude(p);
+      scan_data.ranges.push_back(get_obs_dist(p) + d(get_random()));
     }
   }
 
@@ -490,6 +593,7 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisher_fake_sensor_;
   rclcpp::Publisher<nuturtlebot_msgs::msg::SensorData>::SharedPtr pub_sensor_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
+  rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr pub_scan_;
   rclcpp::Subscription<nuturtlebot_msgs::msg::WheelCommands>::SharedPtr sub_wheel_;
   geometry_msgs::msg::TransformStamped t = geometry_msgs::msg::TransformStamped();
   geometry_msgs::msg::PoseStamped robot_pose = geometry_msgs::msg::PoseStamped();
@@ -517,10 +621,13 @@ private:
   double collision_radius = 0.0;
   double max_range = 0.0;
   double basic_sensor_variance = 0.0;
+  double laser_min_range = 0.0;
+  double laser_max_range = 0.0;
   turtlelib::Diff_drive robot_;
   turtlelib::Wheel_state wheel_vels;
   nuturtlebot_msgs::msg::SensorData sensor_data;
   nav_msgs::msg::Path red_path;
+  sensor_msgs::msg::LaserScan scan_data;
 
   std::vector<double> obstacle_x_ = {0.25, 0.35};
   std::vector<double> obstacle_y_ = {0.25, -0.25};
