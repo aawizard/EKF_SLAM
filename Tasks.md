@@ -31,8 +31,8 @@
     - [x] Task C.8
     - [x] Task C.9
     - [x] Task C.10
-    - [ ] Task C.11
-    - [ ] Task C.12
+    - [x] Task C.11
+    - [x] Task C.12
 
 - [ ] Kinematics - Task D
     - [x] Task D.1

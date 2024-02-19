@@ -136,7 +136,8 @@ public:
     draw_only_ = get_parameter("draw_only").as_bool();
 
     rclcpp::QoS qos_policy = rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
-    rclcpp::QoS scan_qos_policy = rclcpp::QoS(rclcpp::KeepLast(20)).durability_volatile().best_effort();
+    rclcpp::QoS scan_qos_policy =
+      rclcpp::QoS(rclcpp::KeepLast(20)).durability_volatile().best_effort();
     //publisher
     publisher_timestep_ = create_publisher<std_msgs::msg::UInt64>("/timestep", 10);
     publisher_walls_ = create_publisher<visualization_msgs::msg::MarkerArray>(
@@ -146,27 +147,27 @@ public:
       "/obstacles",
       qos_policy);
     if (!draw_only_) {
-    publisher_fake_sensor_ = create_publisher<visualization_msgs::msg::MarkerArray>(
-      "/fake_sensor",
-      qos_policy);
-    pub_scan_ = create_publisher<sensor_msgs::msg::LaserScan>("/scan", scan_qos_policy);
-    pub_sensor_ = create_publisher<nuturtlebot_msgs::msg::SensorData>("red/sensor_data", 10);
-    pub_path_ = create_publisher<nav_msgs::msg::Path>("red/path", 10);
+      publisher_fake_sensor_ = create_publisher<visualization_msgs::msg::MarkerArray>(
+        "/fake_sensor",
+        qos_policy);
+      pub_scan_ = create_publisher<sensor_msgs::msg::LaserScan>("/scan", scan_qos_policy);
+      pub_sensor_ = create_publisher<nuturtlebot_msgs::msg::SensorData>("red/sensor_data", 10);
+      pub_path_ = create_publisher<nav_msgs::msg::Path>("red/path", 10);
 
-    //subscriber
-    sub_wheel_ = create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
-      "red/wheel_cmd", 10, std::bind(&Nusim::wheel_cmd_callback, this, std::placeholders::_1)
-    );
-    //service
-    reset_service = create_service<std_srvs::srv::Empty>(
-      "/reset", std::bind(
-        &Nusim::reset_callback, this,
-        std::placeholders::_1, std::placeholders::_2));
+      //subscriber
+      sub_wheel_ = create_subscription<nuturtlebot_msgs::msg::WheelCommands>(
+        "red/wheel_cmd", 10, std::bind(&Nusim::wheel_cmd_callback, this, std::placeholders::_1)
+      );
+      //service
+      reset_service = create_service<std_srvs::srv::Empty>(
+        "/reset", std::bind(
+          &Nusim::reset_callback, this,
+          std::placeholders::_1, std::placeholders::_2));
 
-    teleport_service = create_service<nusim::srv::Teleport>(
-      "/teleport", std::bind(
-        &Nusim::teleport_callback, this,
-        std::placeholders::_1, std::placeholders::_2));
+      teleport_service = create_service<nusim::srv::Teleport>(
+        "/teleport", std::bind(
+          &Nusim::teleport_callback, this,
+          std::placeholders::_1, std::placeholders::_2));
     }
 
     //timer
@@ -333,7 +334,7 @@ private:
     marker.pose.position.y = pose[1];
     marker.pose.position.z = pose[2];
     marker.color.r = 1.0;
-    marker.color.a = 1.0;
+    marker.color.a = 0.5;
     marker.id = id;
     marker.frame_locked = true;
     return marker;
@@ -354,7 +355,7 @@ private:
       obstacle.type = visualization_msgs::msg::Marker::CYLINDER;
       obstacle.action = visualization_msgs::msg::Marker::ADD;
       obstacle.color.r = 1.0;
-      obstacle.color.a = 1.0;
+      obstacle.color.a = 0.5;
       obstacle.id = i + 4;
       obstacle.frame_locked = true;
       obstacle.scale.x = obstacle_radius_ * 2;
@@ -383,7 +384,7 @@ private:
         scale[0] = arena_x_length_;
         scale[1] = wall_thickness;
         pose[0] = 0;
-        pose[1] = arena_y_length_ / 2;
+        pose[1] = arena_y_length_ / 2 + wall_thickness / 2 + 0.01;
       }
       if (i == 2) {
         pose[1] *= -1;
@@ -391,7 +392,7 @@ private:
       if (i == 1 || i == 3) {
         scale[0] = wall_thickness;
         scale[1] = arena_y_length_;
-        pose[0] = arena_x_length_ / 2;
+        pose[0] = arena_x_length_ / 2 + wall_thickness / 2 + 0.01;
         pose[1] = 0;
       }
       if (i == 3) {
@@ -467,65 +468,90 @@ private:
   turtlelib::Vector2D get_point(double angle)
   {
     turtlelib::Vector2D p;
-    p.x = max_range * cos(angle);
-    p.y = max_range * sin(angle);
+    p.x = laser_max_range * cos(angle);
+    p.y = laser_max_range * sin(angle);
     return p;
     // return (robot_.get_robot_pos() * turtlelib::Transform2D(p, 0.0)).translation();
   }
 
- 
 
 /// \brief Get the distance to the obstacle
   double get_obs_dist(turtlelib::Vector2D p)
   {
-    turtlelib::Vector2D pos = (robot_.get_robot_pos() * turtlelib::Transform2D(p, 0.0)).translation();
-    double d = turtlelib::magnitude(p) + 1.0;
-    double m = (pos.y - y_)/ (pos.x - x_);
+    turtlelib::Vector2D pos =
+      (robot_.get_robot_pos() * turtlelib::Transform2D(p, 0.0)).translation();
+    double d = laser_max_range;
+    double m = (pos.y - y_) / (pos.x - x_);
     double c = y_ - m * x_;
 
     // Check for walls
     // Wall 1
-    if (pos.x < -arena_x_length_ / 2 ){
-      turtlelib::Vector2D p_C = turtlelib::Vector2D{-arena_x_length_ / 2, m * (-arena_x_length_ / 2) + c};
-      turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
+    if (pos.x < -arena_x_length_ / 2) {
+      turtlelib::Vector2D p_C =
+        turtlelib::Vector2D{-arena_x_length_ / 2, m * (-arena_x_length_ / 2) + c};
+      turtlelib::Vector2D p_c_r =
+        (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
       d = std::min(d, turtlelib::magnitude(p_c_r));
     }
     // Wall 2
-    if (pos.x > arena_x_length_ / 2){
-      turtlelib::Vector2D p_C = turtlelib::Vector2D{arena_x_length_ / 2, m * (arena_x_length_ / 2) + c};
-      turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
+    if (pos.x > arena_x_length_ / 2) {
+      turtlelib::Vector2D p_C =
+        turtlelib::Vector2D{arena_x_length_ / 2, m * (arena_x_length_ / 2) + c};
+      turtlelib::Vector2D p_c_r =
+        (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
       d = std::min(d, turtlelib::magnitude(p_c_r));
     }
     // Wall 3
-    if (pos.y < -arena_y_length_ / 2){
-      turtlelib::Vector2D p_C = turtlelib::Vector2D{(-arena_y_length_ / 2 - c) / m, -arena_y_length_ / 2};
-      turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
+    if (pos.y < -arena_y_length_ / 2) {
+      turtlelib::Vector2D p_C =
+        turtlelib::Vector2D{(-arena_y_length_ / 2 - c) / m, -arena_y_length_ / 2};
+      turtlelib::Vector2D p_c_r =
+        (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
       d = std::min(d, turtlelib::magnitude(p_c_r));
-    } 
-    // Wall 4 
-    if (pos.y > arena_y_length_ / 2){
-      turtlelib::Vector2D p_C = turtlelib::Vector2D{(arena_y_length_ / 2 - c) / m, arena_y_length_ / 2};
-      turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
+    }
+    // Wall 4
+    if (pos.y > arena_y_length_ / 2) {
+      turtlelib::Vector2D p_C =
+        turtlelib::Vector2D{(arena_y_length_ / 2 - c) / m, arena_y_length_ / 2};
+      turtlelib::Vector2D p_c_r =
+        (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
       d = std::min(d, turtlelib::magnitude(p_c_r));
     }
     // Check for obstacles
     for (int i = 0; i < int(obstacle_x_.size()); ++i) {
-      if(dist(i, d)){
-        turtlelib::Vector2D p_C = turtlelib::Vector2D{obstacle_x_[i], obstacle_y_[i]};
-        turtlelib::Vector2D p_c_r = (robot_.get_robot_pos().inv() * turtlelib::Transform2D(p_C, 0.0)).translation();
-        d = std::min(d, turtlelib::magnitude(p_c_r));
+      // Checking if obstacle is in the range of the laser
+      if (dist(i, laser_max_range)) {
+        // If its in the range get perpendicular distance of center of the obstacle from the line
+        double d_ = abs(m * obstacle_x_[i] - obstacle_y_[i] + c) / sqrt(m * m + 1);
+        if (d_ <= obstacle_radius_) {
+          // If perpendicular distance is less than radius and on the same side of the p, ,find intersection points
+          double dis_r = sqrt(pow(x_ - obstacle_x_[i], 2) + pow(y_ - obstacle_y_[i], 2));
+          double dis_p = sqrt(pow(pos.x - obstacle_x_[i], 2) + pow(pos.y - obstacle_y_[i], 2));
+          // If the intersection points are in the range of the laser, find the distance to the obstacle
+          if (turtlelib::almost_equal(
+              sqrt(dis_r * dis_r - d_ * d_) + sqrt(dis_p * dis_p - d_ * d_),
+              laser_max_range))
+          {
+            double intersect_dist = sqrt(dis_r * dis_r - d_ * d_) - sqrt(
+              obstacle_radius_ * obstacle_radius_ - d_ * d_);
+            d = std::min(d, intersect_dist);
+          }
+        }
       }
-    }
+      if (d == laser_max_range || d < laser_min_range) {
+        d = 0.0;
+      }
 
-    if(d  > max_range){
-      d = 0.0;
     }
     return d;
 
   }
 
 /// \brief Get the scan data
-  void scan(){
+  void scan()
+  {
+
+    scan_data.ranges.clear();
     scan_data.header.frame_id = "red/base_scan";
     scan_data.header.stamp = get_clock()->now();
     scan_data.angle_min = 0;
@@ -534,11 +560,10 @@ private:
     scan_data.time_increment = 0.0;
     scan_data.range_min = laser_min_range;
     scan_data.range_max = laser_max_range;
-    scan_data.ranges.clear();
     scan_data.scan_time = 0.2;
     std::normal_distribution<> d(0, basic_sensor_variance);
 
-    for(double i = scan_data.angle_min; i < scan_data.angle_max; i += scan_data.angle_increment){
+    for (double i = scan_data.angle_min; i < scan_data.angle_max; i += scan_data.angle_increment) {
       turtlelib::Vector2D p = get_point(i);
 
       // double d = turtlelib::magnitude(p);
