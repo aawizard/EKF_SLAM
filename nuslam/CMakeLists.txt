@@ -21,12 +21,15 @@ find_package(nusim REQUIRED)
 find_package(nuturtle_description REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(nuturtle_control REQUIRED)
-
+find_package(Armadillo REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 add_executable(slam src/slam.cpp)
-ament_target_dependencies(slam rclcpp geometry_msgs turtlelib  nav_msgs tf2 tf2_ros sensor_msgs nav_msgs nuturtle_control)
-target_link_libraries(slam turtlelib::turtlelib ${cpp_typesupport_target})
+ament_target_dependencies(slam rclcpp geometry_msgs turtlelib  nav_msgs tf2 tf2_ros sensor_msgs nav_msgs nuturtle_control nuturtlebot_msgs visualization_msgs)
+target_link_libraries(slam turtlelib::turtlelib ${cpp_typesupport_target} ${ARMADILLO_INCLUDE_DIRS})
 
+
+include_directories(include ${ARMADILLO_INCLUDE_DIRS})
 
 install(TARGETS
   slam
@@ -37,12 +40,6 @@ config
   launch
   DESTINATION share/${PROJECT_NAME}/
 )
-
-
-
-
-
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

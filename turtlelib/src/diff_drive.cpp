@@ -99,20 +99,5 @@ namespace turtlelib
     {
         return wheel_state;
     }
-    Twist2D Diff_drive::diff_state(Twist2D twist) const
-    {
-        Twist2D twist_;
-        if(almost_equal(twist.y,0)){
-            twist_.x = -twist.x * sin(robot_pos.rotation());
-            twist_.y = -twist.x * cos(robot_pos.rotation());
-            twist_.omega = 0;
-        }
-        else{
-            twist_.x = (twist.x / twist.omega) * (-cos(robot_pos.rotation()) + cos(robot_pos.rotation() + twist.omega));
-            twist_.y = (twist.x / twist.omega) * (-sin(robot_pos.rotation()) + sin(robot_pos.rotation() + twist.omega));
-            twist_.omega = 0;
-        }
-        return twist_;
-    }
 
 }

@@ -74,10 +74,6 @@ namespace turtlelib
         /// \brief get wheel position.
         /// \returns the wheel position.
         Wheel_state get_wheel_pos() const;
-
-        /// \brief Get diffrentiation of state for kalamn filter.
-        /// \param twist - the twist to be applied.
-        Twist2D diff_state(Twist2D twist) const; 
      
 
 

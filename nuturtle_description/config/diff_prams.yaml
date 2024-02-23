@@ -6,3 +6,9 @@
     motor_cmd_per_rad_sec: 0.024
     encoder_ticks_per_rev: 651.89865
     collision_radius: 0.11
+    max_range: 1.5
+    basic_sensor_variance: 0.01
+    laser_min_range: 0.11999999731779099
+    laser_max_range: 3.5
+    input_noise: 0.001
+    slip_fraction: 0.001

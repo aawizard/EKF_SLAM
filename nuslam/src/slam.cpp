@@ -9,12 +9,10 @@
 ///    \param wheel_radius (double): radius of the wheels[m]
 ///    \param track_width (double): distance between the wheels[m]
 ///PUBLISHES:
-///    \param odom (nav_msgs::msg::Odometry): odometry of the robot
 ///    \param green/path (nav_msgs::msg::Path): path of the robot
 ///SUBSCRIBES:
-///    \param joint_states (sensor_msgs::msg::JointState): joint states of the robot
-///SERVICES:
-///    \param initial_pose (nuturtle_control::srv::InitConfig): set initial pose of the robot
+///    \param odom (nav_msgs::msg::Odometry): odometry of the robot
+///    \param fake_sensor (visualization_msgs::msg::MarkerArray): fake sensor data
 
 #include <chrono>
 #include <functional>
@@ -27,12 +25,12 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/LinearMath/Matrix3x3.h"
 #include "tf2_ros/transform_broadcaster.h"
-#include "sensor_msgs/msg/joint_state.hpp"
+#include <visualization_msgs/msg/marker_array.hpp>
 #include "nuturtle_control/srv/init_config.hpp"
 #include "turtlelib/diff_drive.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include <tf2/transform_datatypes.h>
+#include "armadillo"
 
 using namespace std::chrono_literals;
 // using namespace turtlelib;
@@ -81,20 +79,21 @@ public:
 
     sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
       "odom", 10, std::bind(&Slam::odom_callback, this, std::placeholders::_1));
+    sub_fake_sensor_ = create_subscription<visualization_msgs::msg::MarkerArray>(
+      "fake_sensor", 10, std::bind(&Slam::fake_sensor_callback, this, std::placeholders::_1));
 
     // pub_odom_ = create_publisher<nav_msgs::msg::Slam>("odom", 10);
     pub_path_ = create_publisher<nav_msgs::msg::Path>("green/path", 10);
     timer_ = create_wall_timer(
       200ms, std::bind(&Slam::timer_callback, this));
 
-    robot.initialize(track_width, wheel_radius, turtlelib::Transform2D());
     odom_robot_tf_.header.frame_id = odom_id;
     odom_robot_tf_.child_frame_id = body_id;
     odom_robot_tf_.header.stamp = this->get_clock()->now();
     map_odom_.header.frame_id = "map";
     map_odom_.child_frame_id = odom_id;
     map_odom_.header.stamp = this->get_clock()->now();
-    state_ = {robot.get_robot_pos().rotation(), robot.get_robot_pos().translation().x, robot.get_robot_pos().translation().y};
+    // state_ = {robot.get_robot_pos().rotation(), robot.get_robot_pos().translation().x, robot.get_robot_pos().translation().y};
   }
 
 private:
@@ -106,12 +105,9 @@ private:
     double yaw = euler_from_quaternion_yaw(q);
     // m.getRPY(roll, pitch, yaw);
     turtlelib::Twist2D twist{msg->twist.twist.linear.x, 0, yaw};
-    turtlelib::Twist2D A = robot.diff_state(twist);
+    T_del *= turtlelib::integrate_twist(twist);
+    Tob_ = turtlelib::Transform2D(turtlelib::Vector2D{msg->pose.pose.position.x, msg->pose.pose.position.y}, yaw);
     
-    // Update the robot pose
-    robot.set_pos(turtlelib::Transform2D(turtlelib::Vector2D{msg->pose.pose.position.x, msg->pose.pose.position.y}, yaw));
-    turtlelib::Transform2D Tob_ = robot.get_robot_pos();
-
     // Publish Transform
     odom_robot_tf_.header.stamp = this->get_clock()->now();
     odom_robot_tf_.transform.translation.x = Tob_.translation().x;
@@ -143,21 +139,38 @@ private:
     return yaw;
   }
 
-  void timer_callback()
+  void fake_sensor_callback(const visualization_msgs::msg::MarkerArray::SharedPtr msg)
   {
+    //Subscribing to fake sensor data
+    for (int i = 0; i < msg->markers.size(); i++){
+      // Do something with the marker
+      state_.subvec(3+2*i, 3+2*i+1) = {msg->markers[i].pose.position.x, msg->markers[i].pose.position.y};
+    }
+
+
+    // Implementing EKF SLAM, Assuming maximum of 30 landmarks
+    Tmb_ = Tmo_ * Tob_;
+    state_.subvec(0,2) = {Tmb_.rotation(), Tmb_.translation().x, Tmb_.translation().y};
+    RCLCPP_INFO_STREAM(get_logger(), "State: " << state_);
+
+
     // Publish map to odom transform
-    Tmb = Tmo * robot.get_robot_pos();
-    state_ = {Tmb.rotation(), Tmb.translation().x, Tmb.translation().y};
+    // Tmb_ = Tmo_ * robot.get_robot_pos();
+    // state_ = {Tmb_.rotation(), Tmb_.translation().x, Tmb_.translation().y};
     map_odom_.header.stamp = this->get_clock()->now();
-    map_odom_.transform.translation.x = Tmo.translation().x;
-    map_odom_.transform.translation.y = Tmo.translation().y;
+    map_odom_.transform.translation.x = Tmo_.translation().x;
+    map_odom_.transform.translation.y = Tmo_.translation().y;
     tf2::Quaternion q;
-    q.setRPY(0, 0, Tmo.rotation());
+    q.setRPY(0, 0, Tmo_.rotation());
     map_odom_.transform.rotation.x = q.x();
     map_odom_.transform.rotation.y = q.y();
     map_odom_.transform.rotation.z = q.z();
     map_odom_.transform.rotation.w = q.w();
     tf_broadcaster_->sendTransform(map_odom_);
+  }
+  void timer_callback()
+  {
+    
   }
   
   std::string body_id = "";
@@ -169,19 +182,21 @@ private:
   double left_wheel_joint = 0.0;
   double right_wheel_joint = 0.0;
   nav_msgs::msg::Odometry odom;
-  turtlelib::Diff_drive robot;
   geometry_msgs::msg::TransformStamped odom_robot_tf_;
   geometry_msgs::msg::TransformStamped map_odom_;
   nav_msgs::msg::Path robot_path_;
-  turtlelib::Transform2D Tmo;
-  turtlelib::Transform2D Tmb;
-  std::vector<double> state_;
+  turtlelib::Transform2D Tmo_;   // Transform from map to odom
+  turtlelib::Transform2D Tmb_;   // Transform from map to base
+  turtlelib::Transform2D Tob_;   // Transform from odom to base
+  turtlelib::Transform2D T_del = turtlelib::Transform2D();  // Transform from odom to base in time 200ms 
+  arma::Col<double> state_ = arma::vec(3+2*30, arma::fill::zeros);  // State vector
+
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;
+  rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr sub_fake_sensor_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   rclcpp::TimerBase::SharedPtr timer_;
-
 };
 
 /// @brief    main function for the Slam node
