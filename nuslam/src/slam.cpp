@@ -47,8 +47,7 @@ class Slam : public rclcpp::Node
 public:
   Slam()
   : Node("slam")
-  {
-    declare_parameter("body_id", "");
+  {    declare_parameter("body_id", "");
     declare_parameter("odom_id", "odom");
     declare_parameter("wheel_left", "");
     declare_parameter("wheel_right", "");
@@ -61,7 +60,6 @@ public:
     wheel_right = get_parameter("wheel_right").as_string();
     wheel_radius = get_parameter("wheel_radius").as_double();
     track_width = get_parameter("track_width").as_double();
-
     if (body_id == "") {
       RCLCPP_ERROR_STREAM(get_logger(), "body_id not set");
       exit(-1);
@@ -74,7 +72,6 @@ public:
       RCLCPP_ERROR_STREAM(get_logger(), "wheel_right not set");
       exit(-1);
     }
-
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
     sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
@@ -84,8 +81,6 @@ public:
 
     // pub_odom_ = create_publisher<nav_msgs::msg::Slam>("odom", 10);
     pub_path_ = create_publisher<nav_msgs::msg::Path>("green/path", 10);
-    timer_ = create_wall_timer(
-      200ms, std::bind(&Slam::timer_callback, this));
 
     odom_robot_tf_.header.frame_id = odom_id;
     odom_robot_tf_.child_frame_id = body_id;
@@ -93,7 +88,6 @@ public:
     map_odom_.header.frame_id = "map";
     map_odom_.child_frame_id = odom_id;
     map_odom_.header.stamp = this->get_clock()->now();
-    // state_ = {robot.get_robot_pos().rotation(), robot.get_robot_pos().translation().x, robot.get_robot_pos().translation().y};
   }
 
 private:
@@ -128,30 +122,23 @@ private:
     pub_path_->publish(robot_path_);
   }
 
-  double euler_from_quaternion_yaw(geometry_msgs::msg::Quaternion quaternion){
-    auto x = quaternion.x;
-    auto y = quaternion.y;
-    auto z = quaternion.z;
-    auto w = quaternion.w;
-    auto siny_cosp = 2 * (w * z + x * y);
-    auto cosy_cosp = 1 - 2 * (y * y + z * z);
-    double yaw = std::atan2(siny_cosp, cosy_cosp);
-    return yaw;
-  }
-
   void fake_sensor_callback(const visualization_msgs::msg::MarkerArray::SharedPtr msg)
   {
-    //Subscribing to fake sensor data
-    for (int i = 0; i < msg->markers.size(); i++){
-      // Do something with the marker
-      state_.subvec(3+2*i, 3+2*i+1) = {msg->markers[i].pose.position.x, msg->markers[i].pose.position.y};
-    }
-
-
     // Implementing EKF SLAM, Assuming maximum of 30 landmarks
     Tmb_ = Tmo_ * Tob_;
-    state_.subvec(0,2) = {Tmb_.rotation(), Tmb_.translation().x, Tmb_.translation().y};
-    RCLCPP_INFO_STREAM(get_logger(), "State: " << state_);
+    //EKF SLAM Step 1 - Prediction Step
+    //getting the state space model g(x,u,0)
+    state_.subvec(0,2) = arma::Col<double>{Tmb_.rotation(), Tmb_.translation().x, Tmb_.translation().y};
+     
+    //Subscribing to fake sensor data
+    for (int i = 0; i < static_cast<int>(msg->markers.size()); i++){
+      turtlelib::Transform2D Tmobs = Tmb_ * turtlelib::Transform2D(turtlelib::Vector2D{msg->markers[i].pose.position.x, msg->markers[i].pose.position.y});
+      state_.subvec(3+2*i, 3+2*i+1) = {Tmobs.translation().x, Tmobs.translation().y};
+
+    }
+    
+    //Variance matrix
+    arma::Mat<double> Sigma = get_pose_covariance(msg->markers.size());
 
 
     // Publish map to odom transform
@@ -168,10 +155,58 @@ private:
     map_odom_.transform.rotation.w = q.w();
     tf_broadcaster_->sendTransform(map_odom_);
   }
-  void timer_callback()
-  {
-    
+ 
+/// \brief    Function to change quaternion to euler angles and get yaw
+  double euler_from_quaternion_yaw(geometry_msgs::msg::Quaternion quaternion){
+    auto x = quaternion.x;
+    auto y = quaternion.y;
+    auto z = quaternion.z;
+    auto w = quaternion.w;
+    auto siny_cosp = 2 * (w * z + x * y);
+    auto cosy_cosp = 1 - 2 * (y * y + z * z);
+    double yaw = std::atan2(siny_cosp, cosy_cosp);
+    return yaw;
   }
+
+  arma::Col<double> get_polar_coordinates(double x, double y){
+    double r = std::sqrt(x*x + y*y);
+    double theta = std::atan2(y, x);
+    return {r, theta};
+  }
+
+  arma::Mat<double> get_pose_covariance(int n){
+
+    RCLCPP_INFO_STREAM(get_logger(), "here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    arma::Mat<double> Sigma = arma::Mat<double>(3+2*n, 3+2*n, arma::fill::zeros);
+    Sigma.submat(0,0,2,2) = 0.1*arma::eye(3,3);
+    // Calculating A matrix
+    arma::Mat<double> A = arma::Mat<double>(2*n, 2*n, arma::fill::eye);
+    if(T_del.translation().x != 0.0 || T_del.translation().y != 0.0){
+      if(turtlelib::almost_equal(T_del.rotation(),0)){
+        A(1,0) = -T_del.translation().x / sin(state_[0]);
+        A(2,0)= T_del.translation().x / cos(state_[0]);
+      }
+      else{
+        A(1,0) = (T_del.translation().x / T_del.rotation()) * (cos(state_[0] + T_del.rotation()) - cos(state_[0]));
+        A(2,0) = (T_del.translation().x / T_del.rotation()) * (sin(state_[0] + T_del.rotation()) - sin(state_[0]));
+      }
+    }
+    
+    RCLCPP_INFO_STREAM(get_logger(), "A: \n" << A);
+
+
+    for (int i = 0; i < n; i++){
+      Sigma.submat(3+2*i,3+2*i,3+2*i+1,3+2*i+1) = 0.1*arma::eye(2,2);
+    }
+    return Sigma;
+  }
+  void cal_h(){
+    int n = (state_.size()-3)/2;
+    for (int i = 0; i < n; i++){
+      
+    }
+  }
+
   
   std::string body_id = "";
   std::string odom_id = "";
@@ -181,6 +216,7 @@ private:
   double track_width = 0.0;
   double left_wheel_joint = 0.0;
   double right_wheel_joint = 0.0;
+  bool first = true;
   nav_msgs::msg::Odometry odom;
   geometry_msgs::msg::TransformStamped odom_robot_tf_;
   geometry_msgs::msg::TransformStamped map_odom_;
@@ -189,7 +225,8 @@ private:
   turtlelib::Transform2D Tmb_;   // Transform from map to base
   turtlelib::Transform2D Tob_;   // Transform from odom to base
   turtlelib::Transform2D T_del = turtlelib::Transform2D();  // Transform from odom to base in time 200ms 
-  arma::Col<double> state_ = arma::vec(3+2*30, arma::fill::zeros);  // State vector
+  arma::Col<double> state_ = arma::vec(3+2*30,arma::fill::zeros);  // State vector
+  arma::Mat<double> Sigma;  // Covariance matrix
 
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;

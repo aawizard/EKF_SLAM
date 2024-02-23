@@ -15,6 +15,7 @@
 
         <node name="slam" pkg="nuslam" exec="slam" >
             <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
+            
             <param name="odom_id" value="green/odom"/>
             <param name="body_id" value="green/base_footprint"/>
             <param name="wheel_left" value="wheel_left_joint"/>
