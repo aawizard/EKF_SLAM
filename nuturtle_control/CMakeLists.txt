@@ -28,8 +28,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}_srv
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME}_srv "rosidl_typesupport_cpp")
 
-
-find_package(rosidl_default_generators REQUIRED)
 add_executable(turtle_control src/turtle_control.cpp)
 add_executable(odometry src/odometry.cpp)
 add_executable(circle src/circle.cpp)

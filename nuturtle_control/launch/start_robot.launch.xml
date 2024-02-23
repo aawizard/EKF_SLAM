@@ -3,6 +3,7 @@
     <arg name="cmd_src" default="circle" description="Values can be: circle: launch the circle node, teleop: launch keyoard teleop, node."></arg> 
     <arg name="robot" default="nusim" description="Values can be: nusim: To run in simulation  localhost: To run on robot  none"/>
     <arg name="use_rviz" default="false" description="Values can be: true: To run rviz  false: To not run rviz"/>
+    <arg name="rviz_config" default="$(find-pkg-share nuturtle_control)/config/nusim_odom.rviz" description="Path to rviz config file"></arg>
 
     <group  if="$(eval '\'$(var cmd_src)\' == \'circle\'')">
         <node name="circle" pkg="nuturtle_control" exec="circle">
@@ -25,7 +26,7 @@
             <param name="slip_fraction" value="0.001"/>
             
         </node>
-        <node pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share nuturtle_control)/config/nusim_odom.rviz -f nusim/world" name= 'rviz2' if="$(eval '\'$(var use_rviz)\' == \'true\'')"/>
+        <node pkg="rviz2" exec="rviz2" args="-d $(var rviz_config) -f nusim/world" name= 'rviz2' if="$(eval '\'$(var use_rviz)\' == \'true\'')"/>
         <node name="turtle_control" pkg="nuturtle_control" exec="turtle_control">
             <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
             <remap from="wheel_cmd" to="red/wheel_cmd" />
@@ -34,12 +35,11 @@
         </node>
         <node name="odometry" pkg="nuturtle_control" exec="odometry">
             <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
-            <param name="odom_id" value="odom"/>
+            <param name="odom_id" value="blue/odom"/>
             <param name="body_id" value="blue/base_footprint"/>
             <param name="wheel_left" value="wheel_left_joint"/>
             <param name="wheel_right" value="wheel_right_joint"/>
-            <remap from="joint_states" to="red/joint_states"/>
-            
+            <remap from="joint_states" to="red/joint_states"/>           
         </node>
         <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py" >
             <arg name="color" value="red" />
@@ -53,7 +53,7 @@
             <arg name="use_rviz" value="false" />
             <arg name="use_jsp" value="true"/>
         </include>
-        <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id odom "/>
+        <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id blue/odom "/>
         
     </group>
 
@@ -93,7 +93,7 @@
             <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
             <param name="draw_only" value="true"/>
         </node>
-        <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id odom "/>
+        <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id blue/odom "/>
         
     </group>
 

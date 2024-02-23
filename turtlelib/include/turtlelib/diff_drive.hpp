@@ -54,6 +54,10 @@ namespace turtlelib
         /// \param wheel_vels - the wheel velocities.
         void forward_kinematics(Wheel_state wheel_vels);
 
+        /// \brief Forward kinematics of a diffrential drive robot with twist
+        /// \param twist - the twist to be applied.
+        void forward_kinematics(Twist2D twist);
+
         /// \brief Set the robot position.
         /// \param robot_pos_ - the robot position.
         void set_pos(Transform2D robot_pos_);
@@ -71,9 +75,10 @@ namespace turtlelib
         /// \returns the wheel position.
         Wheel_state get_wheel_pos() const;
 
-        
-
-
+        /// \brief Get diffrentiation of state for kalamn filter.
+        /// \param twist - the twist to be applied.
+        Twist2D diff_state(Twist2D twist) const; 
+     
 
 
     private:

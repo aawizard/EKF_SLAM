@@ -68,6 +68,15 @@ namespace turtlelib
     }
    // ################# End of citation 6 ##################
 
+    void Diff_drive::forward_kinematics(Twist2D twist)
+    {
+        Transform2D Tbb_ = integrate_twist(twist);
+        robot_pos *= Tbb_;
+        Wheel_state wheel_vels = inverse_kinematics(twist);
+        wheel_state.phi_r += wheel_vels.phi_r;
+        wheel_state.phi_l += wheel_vels.phi_l;
+    }
+
     Wheel_state Diff_drive::inverse_kinematics(Twist2D twist) 
     {
         if (almost_equal(twist.y,0)){
@@ -90,4 +99,20 @@ namespace turtlelib
     {
         return wheel_state;
     }
+    Twist2D Diff_drive::diff_state(Twist2D twist) const
+    {
+        Twist2D twist_;
+        if(almost_equal(twist.y,0)){
+            twist_.x = -twist.x * sin(robot_pos.rotation());
+            twist_.y = -twist.x * cos(robot_pos.rotation());
+            twist_.omega = 0;
+        }
+        else{
+            twist_.x = (twist.x / twist.omega) * (-cos(robot_pos.rotation()) + cos(robot_pos.rotation() + twist.omega));
+            twist_.y = (twist.x / twist.omega) * (-sin(robot_pos.rotation()) + sin(robot_pos.rotation() + twist.omega));
+            twist_.omega = 0;
+        }
+        return twist_;
+    }
+
 }

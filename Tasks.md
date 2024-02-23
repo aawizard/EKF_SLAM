@@ -32,7 +32,7 @@
     - [x] Task C.9
     - [x] Task C.10
     - [x] Task C.11
-    - [x] Task C.12
+    - [x] Task C.12 (Complete the Readme)
 
 - [ ] Kinematics - Task D
     - [x] Task D.1
@@ -45,7 +45,7 @@
     - [x] Task E.3
     - [x] Task E.4
     - [x] Task E.5
-    - [x] Task E.6
+    - [x] Task E.6 (Complete the readme)
 
 - [ ] The Real Robot - Task F
     - [x] Task F.1
