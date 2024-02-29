@@ -234,12 +234,12 @@ private:
     std::uniform_real_distribution<> u(-slip_fraction, slip_fraction);
     double slip_noise = u(get_random());
 
-    if (!turtlelib::almost_equal(new_left_wheel_joint, 0.0)) {
-      new_left_wheel_joint += d(get_random());
-    }
-    if (!turtlelib::almost_equal(new_right_wheel_joint, 0.0)) {
-      new_right_wheel_joint += d(get_random());
-    }
+    // if (!turtlelib::almost_equal(new_left_wheel_joint, 0.0)) {
+    //   new_left_wheel_joint += d(get_random());
+    // }
+    // if (!turtlelib::almost_equal(new_right_wheel_joint, 0.0)) {
+    //   new_right_wheel_joint += d(get_random());
+    // }
 
     //Save the wheel commands
     left_wheel_joint += (new_left_wheel_joint * encoder_ticks_per_rev_sec_ );
@@ -451,6 +451,8 @@ private:
           const turtlelib::Vector2D sen_pos = (robot_.get_robot_pos().inv() * Two).translation();
           obstacle.pose.position.x = sen_pos.x + obs_noise;
           obstacle.pose.position.y = sen_pos.y + obs_noise;
+          //  obstacle.pose.position.x = sen_pos.x ;
+          // obstacle.pose.position.y = sen_pos.y;
           obstacle.pose.position.z = wall_height / 2;
         } else {
           obstacle.action = visualization_msgs::msg::Marker::DELETE;

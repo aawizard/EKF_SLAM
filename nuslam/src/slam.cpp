@@ -27,9 +27,9 @@
 #include "tf2_ros/transform_broadcaster.h"
 #include <visualization_msgs/msg/marker_array.hpp>
 #include "nuturtle_control/srv/init_config.hpp"
-#include "turtlelib/diff_drive.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "turtlelib/ekf_slam.hpp"
 #include "armadillo"
 
 using namespace std::chrono_literals;
@@ -92,6 +92,7 @@ public:
     map_odom_.header.frame_id = "map";
     map_odom_.child_frame_id = odom_id;
     map_odom_.header.stamp = this->get_clock()->now();
+    RCLCPP_INFO_STREAM(get_logger(), "BEFORE" <<H);
   }
 
 private:
@@ -116,7 +117,7 @@ private:
 
     // Publish path
     robot_path_.header.stamp = this->get_clock()->now();
-    robot_path_.header.frame_id = odom_id;
+    robot_path_.header.frame_id = "map";
     geometry_msgs::msg::PoseStamped robot_pose_;    
     robot_pose_.header.stamp = this->get_clock()->now();
     robot_pose_.header.frame_id = odom_id;
@@ -133,38 +134,51 @@ private:
     Tmb_ = Tmo_ * Tob_;
     //EKF SLAM Step 1 - Prediction Step
     //getting the state space model g(x,u,0)
-    state_.subvec(0,2) = arma::Col<double>{Tmb_.rotation(), Tmb_.translation().x, Tmb_.translation().y};
-     
+    // state_.subvec(0,2) = arma::Col<double>{Tmb_.rotation(), Tmb_.translation().x, Tmb_.translation().y};
+    ekf.Prior_update(Tmb_, T_del);     
     //Subscribing to fake sensor data
     for (int i = 0; i < static_cast<int>(msg->markers.size()); i++){
       turtlelib::Transform2D Tmobs = Tmb_ * turtlelib::Transform2D(turtlelib::Vector2D{msg->markers[i].pose.position.x, msg->markers[i].pose.position.y});
       auto r = sqrt(pow(msg->markers[i].pose.position.x,2) + pow(msg->markers[i].pose.position.y,2));
-      auto theta = atan2(msg->markers[i].pose.position.y, msg->markers[i].pose.position.x);
-      z_obs.subvec(2*i, 2*i+1) = {r, theta};
+      auto theta = turtlelib::normalize_angle(atan2(msg->markers[i].pose.position.y, msg->markers[i].pose.position.x));
+      z_obs.subvec(2*(msg->markers[i].id), 2*(msg->markers[i].id)+1) = {r, theta};
       // z_obs.subvec(2*(msg->markers[i].id), 2*(msg->markers[i].id)+1) = {Tmobs.translation().x, Tmobs.translation().y};
-      // state_.subvec(3+2*(msg->markers[i].id), 3+2*(msg->markers[i].id)+1) = {Tmobs.translation().x, Tmobs.translation().y};
-
+      // if(first){
+      //   state_.subvec(3+2*(msg->markers[i].id), 3+2*(msg->markers[i].id)+1) = {Tmobs.translation().x, Tmobs.translation().y}; 
+      // }
+      RCLCPP_INFO_STREAM(get_logger(), "obstacle_observed");
+      ekf.object_observed(Tmobs.translation().x, Tmobs.translation().y, msg->markers[i].id);
     }
+    first = false;
+    state_ = ekf.get_state();
+    Sigma = ekf.get_sigma();
     
     //Variance matrix
-    set_prior_covariance();
-    //Measurement Model
-    update_measurement_vector();   // z and H are updated
+    // set_prior_covariance();
+    // //Measurement Model
+    // update_measurement_vector();   // z and H are updated
+    // RCLCPP_INFO_STREAM(get_logger(), "Z_pred 2!!!"<< z_pred[8]<<" "<< z_pred[9]);
 
-    // Calculate Kalman Gain
-    arma::Mat<double> R = arma::Mat<double>(2*max_obs, 2*max_obs, arma::fill::eye);
-    // R.diag() = arma::randn(2*max_obs);
-    std::normal_distribution<> d(0, input_noise);
-    for(int i;i<2*max_obs;i++){
-      R(i,i) = d(get_random());
-    }
-    // RCLCPP_INFO_STREAM(get_logger(), "\n "<<H);
-    arma::Mat<double> K = Sigma * H.t() * arma::inv(H * Sigma * H.t() + R);
-    // arma::Mat<double> K = Sigma * H.t() * arma::inv(H * Sigma * H.t());
+    // // Calculate Kalman Gain
+    // arma::Mat<double> R = arma::Mat<double>(2*max_obs, 2*max_obs, arma::fill::eye);
+    // // R.diag() = arma::randn(2*max_obs);
+    // std::normal_distribution<> d(0, input_noise/10);
+    // for(int i;i<2*max_obs;i++){
+    //   R(i,i) = d(get_random());
+    // }
+    // // RCLCPP_INFO_STREAM(get_logger(), "\n "<<H);
+    // arma::Mat<double> K = Sigma * H.t() * arma::inv(H * Sigma * H.t() + R);
+    // // arma::Mat<double> K = Sigma * H.t() * arma::inv(H * Sigma * H.t());
     
-    //EKF SLAM Step 2 - Update Step
-    state_ += K * (z_obs - z_pred);
-    Sigma = (arma::Mat<double>(3+2*max_obs, 3+2*max_obs, arma::fill::eye) - K * H) * Sigma;
+    // //EKF SLAM Step 2 - Update Step
+    // RCLCPP_INFO_STREAM(get_logger(), "Z_pred 3!!!"<< z_pred[8]<<" "<< z_pred[9]);
+
+    
+    
+    // state_ += K * (z_obs - z_pred);
+
+    // RCLCPP_INFO_STREAM(get_logger(), "After" << state_[3+2*29] << " " << state_[3+2*29+1]);
+    // Sigma = (arma::Mat<double>(3+2*max_obs, 3+2*max_obs, arma::fill::eye) - K * H) * Sigma;
 
     // Update Transform
     RCLCPP_INFO_STREAM(get_logger(), state_[1]<<" "<< state_[2] << " "<< state_[0] );
@@ -181,7 +195,7 @@ private:
     map_odom_.transform.rotation.z = q.z();
     map_odom_.transform.rotation.w = q.w();
     tf_broadcaster_->sendTransform(map_odom_);
-    T_del = turtlelib::Transform2D();
+    
     publish_estimate_markers();
   }
  
@@ -199,22 +213,28 @@ private:
   arma::Col<double> get_polar_coordinates(double mx, double my){
     double r = sqrt(pow(mx-state_.at(1),2) + pow(my-state_.at(2),2));
     double theta = turtlelib::normalize_angle(atan2(my-state_.at(2), mx-state_.at(1)) - state_.at(0));
+   
     return {r, theta};
   }
 
   void set_prior_covariance(){
     // Calculating A matrix
     arma::Mat<double> A = arma::Mat<double>(3+2*max_obs, 3+2*max_obs, arma::fill::eye);
-    if((T_del.translation().x != 0.0 || T_del.translation().y != 0.0) ){
-      if(turtlelib::almost_equal(T_del.rotation(),0)){
-        A(1,0) = -T_del.translation().x * sin(state_[0]);
-        A(2,0)= T_del.translation().x * cos(state_[0]);
-      }
-      else{
-        A(1,0) = (T_del.translation().x / T_del.rotation()) * (cos(turtlelib::normalize_angle(state_[0] + T_del.rotation())) - cos(state_[0]));
-        A(2,0) = (T_del.translation().x / T_del.rotation()) * (sin(turtlelib::normalize_angle(state_[0] + T_del.rotation())) - sin(state_[0]));
-      }
-    }
+    turtlelib::Twist2D twist;
+    twist.omega = T_del.rotation();
+    // if((T_del.translation().x != 0.0 || T_del.translation().y != 0.0) ){
+      // if(turtlelib::almost_equal(T_del.rotation(),0)){
+      //   A(1,0) = -T_del.translation().x * sin(state_[0]);
+      //   A(2,0)= T_del.translation().x * cos(state_[0]);
+      // }
+      // else{
+      //   twist.x = (T_del.translation().y * twist.omega)/(1-cos(twist.omega));
+      //   A(1,0) = (twist.x / T_del.rotation()) * (cos(turtlelib::normalize_angle(state_[0] + T_del.rotation())) - cos(state_[0]));
+      //   A(2,0) = (twist.x / T_del.rotation()) * (sin(turtlelib::normalize_angle(state_[0] + T_del.rotation())) - sin(state_[0]));
+      // }
+      A(1,0) = -T_del.translation().y;
+      A(2,0) = T_del.translation().x;
+    // }
     // Make Q matrix
     arma::Mat<double> Q = arma::join_cols(arma::join_rows(arma::eye(3,3), arma::Mat<double>(3, 2 * max_obs, arma::fill::zeros)),
                                       arma::Mat<double>(2 * max_obs, 3 + 2* max_obs, arma::fill::zeros));
@@ -223,20 +243,25 @@ private:
         Q.submat(0,0,2,2).diag() = arma::vec{d(get_random()), d(get_random()), d(get_random())};    
     Sigma = A * Sigma * A.t() + Q;
     // Sigma = A * Sigma * A.t();
-    
+    T_del = turtlelib::Transform2D();
   }
 
   void update_measurement_vector(){
     for (int i=0; i<max_obs;i++){
-      if(state_[1] != 0.0 || state_[2] != 0.0){
+      // if(state_[1] != 0.0 || state_[2] != 0.0){
         z_pred.subvec(2*i, 2*i +1) = get_polar_coordinates(state_[3+2*i], state_[3+2*i+1]);
         auto del_x = state_[3+2*i] - state_[1];
         auto del_y = state_[3+2*i+1] - state_[2];
         auto d = pow(del_x,2) + pow(del_y,2);
+        // RCLCPP_INFO_STREAM(get_logger(), "BEFORE" <<H);
+        if (d > 0.001){
         H.submat(2*i, 0, 2*i+1, 2) = arma::join_rows(arma::vec{0,-1}, arma::vec{-del_x/sqrt(d), del_y/d}, arma::vec{-del_y/sqrt(d), -del_x/d}); 
-        H.submat(2*i, 3 + 2*i, 2*i+1, 3 + 2*i+1) = arma::join_rows(arma::vec{del_x/sqrt(d), -del_y/d}, arma::vec{del_y/sqrt(d), del_x/d});
-      }
-    }    
+        H.submat(2*i, 3 + 2*i, 2*i+1, 4 + 2*i) = arma::join_rows(arma::vec{del_x/sqrt(d), -del_y/d}, arma::vec{del_y/sqrt(d), del_x/d});
+        }
+        // RCLCPP_INFO_STREAM(get_logger(), "AFTER" <<H);
+      // }
+    }
+    RCLCPP_INFO_STREAM(get_logger(), "Z_pred  1!!!"<< z_pred[8]<<" "<< z_pred[9]);   
   }
 
   void publish_estimate_markers(){
@@ -244,7 +269,7 @@ private:
     visualization_msgs::msg::Marker marker;
     for (int i=0; i<max_obs;i++){
       marker.id = i;
-      if(state_[3+2*i] != 0.0 || state_[3+2*i+1] != 0.0){
+      if(!turtlelib::almost_equal(state_[3+2*i], 0.0) || !turtlelib::almost_equal(state_[3+2*i+1], 0.0)){
         marker.header.frame_id = "map";
         marker.header.stamp = this->get_clock()->now();
         
@@ -253,8 +278,8 @@ private:
         marker.pose.position.x = state_[3+2*i];
         marker.pose.position.y = state_[3+2*i+1];
         marker.pose.position.z = wall_height/2;
-        marker.scale.x = 0.1;
-        marker.scale.y = 0.1;
+        marker.scale.x = 0.03;
+        marker.scale.y = 0.03;
         marker.scale.z = wall_height;
         marker.color.a = 1.0;
         marker.color.g = 1.0;
@@ -297,11 +322,15 @@ private:
   turtlelib::Transform2D Tmb_;   // Transform from map to base
   turtlelib::Transform2D Tob_;   // Transform from odom to base
   turtlelib::Transform2D T_del = turtlelib::Transform2D();  // Transform from odom to base in time 200ms 
+  turtlelib::Ekf_slam ekf = turtlelib::Ekf_slam(max_obs);
+
+  
   arma::Col<double> state_ = arma::vec(3+2*max_obs,arma::fill::zeros);  // State vector
   arma::Mat<double> Sigma = arma::join_cols(arma::join_rows(arma::Mat<double>(3, 3, arma::fill::zeros), arma::Mat<double>(3, 2 * max_obs, arma::fill::zeros)),
                                             arma::join_rows(arma::Mat<double>(2 * max_obs, 3, arma::fill::zeros), arma::Mat<double>(2 * max_obs, 2 * max_obs, arma::fill::eye) * 10000));  // Covariance matrix
   arma::Col<double> z_pred = arma::vec(2*max_obs,arma::fill::zeros);  // Measurement vector
   arma::Col<double> z_obs = arma::vec(2*max_obs,arma::fill::zeros);  // Measurement vector
+  arma::Col<double> z_diff = arma::vec(2*max_obs,arma::fill::zeros);
   arma::Mat<double> H = arma::Mat<double>(2*max_obs, 3+2*max_obs, arma::fill::zeros);  // Jacobian matrix
 
 
