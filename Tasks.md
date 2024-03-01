@@ -60,5 +60,5 @@
     - [ ] Task V.4
 
 - [ ] SLAM - Task L
-    - [ ] Task L.1
+    - [x] Task L.1
     - [ ] Task L.2

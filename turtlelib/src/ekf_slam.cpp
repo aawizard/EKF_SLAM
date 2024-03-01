@@ -34,7 +34,7 @@ namespace turtlelib
     arma::Mat<double> Ekf_slam::compute_covariance(Transform2D T_del){
         // T_del = T_del.inv();
         auto theta = state_(0);
-        auto del_theta = T_del.rotation();
+        auto del_theta = normalize_angle(T_del.rotation());
         auto del_x = T_del.translation().x;
         if (!almost_equal(T_del.rotation(),0.0)){
             del_x = (abs(T_del.translation().y)*del_theta)/(1-cos(del_theta));
@@ -45,8 +45,8 @@ namespace turtlelib
             A(2,0) = del_x*cos(theta);
         }
         else{
-            A(1,0) = (del_x/del_theta) * (-cos(theta) + cos(theta + del_theta));
-            A(2,0) = (del_x/del_theta) * (-sin(theta) + sin(theta + del_theta));
+            A(1,0) = (del_x/del_theta) * (-cos(theta) + cos(normalize_angle(theta + del_theta)));
+            A(2,0) = (del_x/del_theta) * (-sin(theta) + sin(normalize_angle(theta + del_theta)));
         }
         return A;
     }
@@ -55,13 +55,12 @@ namespace turtlelib
     void Ekf_slam::Prior_update(Transform2D state, Transform2D T_del){
         
         auto A = compute_covariance(T_del);
-        state_.subvec(0, 2) = {state.rotation(),state.translation().x, state.translation().y};
+        state_.subvec(0, 2) = {normalize_angle(state.rotation()),state.translation().x, state.translation().y};
         arma::Mat<double> Q = arma::join_cols(arma::join_rows(arma::eye(3,3), arma::Mat<double>(3, 2 * max_obs, arma::fill::zeros)),
                                       arma::Mat<double>(2 * max_obs, 3 + 2* max_obs, arma::fill::zeros));
         // Q.submat(0,0,2,2).diag() = arma::randn(3);    
-        Q.submat(0,0,2,2).diag() = arma::vec{0.001, 0.001, 0.001};
-        // std::normal_distribution<> d(0, 0.001);
-        //     Q.submat(0,0,2,2).diag() = arma::vec{d(get_random()), d(get_random()), d(get_random())};    
+        // Q = Q * 0.00001;
+        Q.submat(0,0,2,2).diag() = arma::vec{0.0001, 0.0001, 0.0001};  
         sigma_ = A * sigma_ * A.t() + Q;
     }
 
@@ -96,10 +95,10 @@ namespace turtlelib
         auto del_x = state_[3+2*i] - state_[1];
         auto del_y = state_[3+2*i+1] - state_[2];
         auto d = pow(del_x,2) + pow(del_y,2);
-        if (d > 0.001){
+        // if (d > 0.01){
         H.submat(2*i, 0, 2*i+1, 2) = arma::join_rows(arma::vec{0,-1}, arma::vec{-del_x/sqrt(d), del_y/d}, arma::vec{-del_y/sqrt(d), -del_x/d}); 
         H.submat(2*i, 3 + 2*i, 2*i+1, 4 + 2*i) = arma::join_rows(arma::vec{del_x/sqrt(d), -del_y/d}, arma::vec{del_y/sqrt(d), del_x/d});
-        }
+        // }
     }
     }
 
