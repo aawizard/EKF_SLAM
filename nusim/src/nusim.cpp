@@ -434,7 +434,7 @@ private:
       obstacle.header.stamp = get_clock()->now();
       obstacle.type = visualization_msgs::msg::Marker::CYLINDER;
 
-      for (int i = 0; i < int(obstacle_x_.size()); ++i) {
+      for (int i = 0; i < int(obstacle_x_.size()) - 1; ++i) {
         obstacle.id = i;
         if (dist(i, max_range)) {
           std::normal_distribution<> d(0, basic_sensor_variance);
@@ -449,10 +449,10 @@ private:
           obstacle.scale.z = wall_height;
           const turtlelib::Transform2D Two(turtlelib::Vector2D{obstacle_x_[i], obstacle_y_[i]}, 0);
           const turtlelib::Vector2D sen_pos = (robot_.get_robot_pos().inv() * Two).translation();
-          obstacle.pose.position.x = sen_pos.x + obs_noise;
-          obstacle.pose.position.y = sen_pos.y + obs_noise;
-          //  obstacle.pose.position.x = sen_pos.x ;
-          // obstacle.pose.position.y = sen_pos.y;
+          // obstacle.pose.position.x = sen_pos.x + obs_noise;
+          // obstacle.pose.position.y = sen_pos.y + obs_noise;
+           obstacle.pose.position.x = sen_pos.x ;
+          obstacle.pose.position.y = sen_pos.y;
           obstacle.pose.position.z = wall_height / 2;
         } else {
           obstacle.action = visualization_msgs::msg::Marker::DELETE;

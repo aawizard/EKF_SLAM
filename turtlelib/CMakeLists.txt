@@ -112,7 +112,8 @@ if(BUILD_TESTING)
     add_executable(my_test_exe tests/test_geometry2d.cpp 
                                tests/test_se2d.cpp 
                                tests/test_svg.cpp
-                               tests/test_diff_drive.cpp)
+                               tests/test_diff_drive.cpp
+                               tests/test_ekf_slam.cpp)
     target_link_libraries(my_test_exe Catch2::Catch2WithMain turtlelib)
     target_include_directories(my_test_exe
     PUBLIC
