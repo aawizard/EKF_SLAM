@@ -27,7 +27,17 @@ find_package(visualization_msgs REQUIRED)
 include_directories(include ${ARMADILLO_INCLUDE_DIRS})
 
 add_executable(slam src/slam.cpp)
-ament_target_dependencies(slam rclcpp geometry_msgs turtlelib  nav_msgs tf2 tf2_ros sensor_msgs nav_msgs nuturtle_control nuturtlebot_msgs visualization_msgs)
+ament_target_dependencies(slam rclcpp
+  geometry_msgs
+  turtlelib
+  nav_msgs
+  tf2
+  tf2_ros
+  sensor_msgs
+  nav_msgs
+  nuturtle_control
+  nuturtlebot_msgs
+  visualization_msgs)
 target_link_libraries(slam turtlelib::turtlelib ${cpp_typesupport_target} ${ARMADILLO_LIBRARIES})
 
 

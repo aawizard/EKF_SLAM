@@ -106,8 +106,8 @@ private:
   void sensor_callback(const nuturtlebot_msgs::msg::SensorData::SharedPtr msg)
   {
 
-    double left_wheel_joint = static_cast<double>(msg->left_encoder) / encoder_ticks_per_rev;
-    double right_wheel_joint = static_cast<double>(msg->right_encoder) / encoder_ticks_per_rev;
+    const auto left_wheel_joint = static_cast<double>(msg->left_encoder) / encoder_ticks_per_rev;
+    const auto right_wheel_joint = static_cast<double>(msg->right_encoder) / encoder_ticks_per_rev;
     if (first_time) {
       joint_state.header.stamp = msg->stamp;
       joint_state.name = {"wheel_left_joint", "wheel_right_joint"};
@@ -116,11 +116,11 @@ private:
       first_time = false;
     }
     else{
-      auto del_t = msg->stamp.sec + msg->stamp.nanosec * 1e-9 - joint_state.header.stamp.sec -
+      const auto del_t = msg->stamp.sec + msg->stamp.nanosec * 1e-9 - joint_state.header.stamp.sec -
       joint_state.header.stamp.nanosec * 1e-9;
     
-      double left_wheel_velocity =( (left_wheel_joint - joint_state.position.at(0)) / del_t);
-      double right_wheel_velocity = (right_wheel_joint - joint_state.position.at(1)) / del_t;
+      const auto left_wheel_velocity =( (left_wheel_joint - joint_state.position.at(0)) / del_t);
+      const auto right_wheel_velocity = (right_wheel_joint - joint_state.position.at(1)) / del_t;
       //JointState calculation
       joint_state.header.stamp = msg->stamp;
       joint_state.position = {left_wheel_joint, right_wheel_joint};

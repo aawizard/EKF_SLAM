@@ -5,15 +5,13 @@
     <arg name="use_rviz" default="false" description="Values can be: true: To run rviz  false: To not run rviz"/>
     <arg name="rviz_config" default="$(find-pkg-share nuturtle_control)/config/nusim_odom.rviz" description="Path to rviz config file"></arg>
 
-    <group  if="$(eval '\'$(var cmd_src)\' == \'circle\'')">
-        <node name="circle" pkg="nuturtle_control" exec="circle">
-            <param name="frequency" value="100"/>
-        </node>
-    </group>
+
+    <node name="circle" pkg="nuturtle_control" exec="circle" if="$(eval '\'$(var cmd_src)\' == \'circle\'')">
+        <param name="frequency" value="100"/>
+    </node>
+
     
-    <group  if="$(eval '\'$(var cmd_src)\' == \'teleop\'')">
-        <node name="teleop" pkg="turtlebot3_teleop" exec="teleop_keyboard"></node>
-    </group>
+    <node name="teleop" pkg="turtlebot3_teleop" exec="teleop_keyboard" launch-prefix="xterm -e" if="$(eval '\'$(var cmd_src)\' == \'teleop\'')"></node>
     
     <group  if="$(eval '\'$(var cmd_src)\' == \'none\'')"/>
     
@@ -60,22 +58,22 @@
     <group if="$(eval '\'$(var robot)\' == \'localhost\'')"> 
         <node name="numsr_turtlebot" pkg="numsr_turtlebot" exec="numsr_turtlebot"/>
 
-    <node name="turtle_control" pkg="nuturtle_control" exec="turtle_control" >
-        <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml"/>
-        <remap from="joint_states" to="blue/joint_states"/>
-    </node>
-    <node name="odometry" pkg="nuturtle_control" exec="odometry" >
-        <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
-        <param name="odom_id" value="odom"/>
-        <param name="body_id" value="blue/base_footprint"/>
-        <param name="wheel_left" value="wheel_left_joint"/>
-        <param name="wheel_right" value="wheel_right_joint"/>
-        <remap from="joint_states" to="blue/joint_states"/>
-    </node>
-    <include file="$(find-pkg-share hls_lfcd_lds_driver)/launch/hlds_laser.launch.py">
-    <arg name="frame_id" value="blue/base_scan"/>
-    <arg name="port" value="/dev/ttyUSB0"/>
-    </include>
+        <node name="turtle_control" pkg="nuturtle_control" exec="turtle_control" >
+            <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml"/>
+            <remap from="joint_states" to="blue/joint_states"/>
+        </node>
+        <node name="odometry" pkg="nuturtle_control" exec="odometry" >
+            <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
+            <param name="odom_id" value="odom"/>
+            <param name="body_id" value="blue/base_footprint"/>
+            <param name="wheel_left" value="wheel_left_joint"/>
+            <param name="wheel_right" value="wheel_right_joint"/>
+            <remap from="joint_states" to="blue/joint_states"/>
+        </node>
+        <include file="$(find-pkg-share hls_lfcd_lds_driver)/launch/hlds_laser.launch.py">
+        <arg name="frame_id" value="blue/base_scan"/>
+        <arg name="port" value="/dev/ttyUSB0"/>
+        </include>
     </group>
     <!-- None Group -->
     <group if="$(eval '\'$(var robot)\' == \'none\'')">
@@ -95,11 +93,4 @@
         <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id blue/odom "/>
         
     </group>
-
-
-
-
-
-
-    
 </launch>

@@ -11,4 +11,4 @@
     laser_min_range: 0.11999999731779099
     laser_max_range: 3.5
     input_noise: 0.001
-    slip_fraction: 0.001
+    slip_fraction: 0.01

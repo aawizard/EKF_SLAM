@@ -7,6 +7,7 @@ This repository consists of several ROS2 packages
 - nusim - Simulator for nuturtle
 - turtlelib - Library for calculation transforms.
 - nuturtle_control - Has odomentry and turtle_control node to control the robot.
+- nuslam - Implements SLAM for turttlebot.
 
 # Video
  

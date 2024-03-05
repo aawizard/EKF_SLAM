@@ -48,10 +48,10 @@ public:
   Odometry()
   : Node("odometry")
   {
-    declare_parameter("body_id", "");
+    declare_parameter("body_id", "blue/base_footprint");
     declare_parameter("odom_id", "odom");
-    declare_parameter("wheel_left", "");
-    declare_parameter("wheel_right", "");
+    declare_parameter("wheel_left", "wheel_left_joint");
+    declare_parameter("wheel_right", "wheel_right_joint");
     declare_parameter("wheel_radius", -1.0);
     declare_parameter("track_width", -1.0);
 
@@ -62,19 +62,6 @@ public:
     wheel_radius = get_parameter("wheel_radius").as_double();
     track_width = get_parameter("track_width").as_double();
 
-    if (body_id == "") {
-      RCLCPP_ERROR_STREAM(get_logger(), "body_id not set");
-      // exit(-1);
-    }
-    if (wheel_left == "") {
-      RCLCPP_ERROR_STREAM(get_logger(), "wheel_left not set");
-      // exit(-1);
-    }
-    if (wheel_right == "") {
-      RCLCPP_ERROR_STREAM(get_logger(), "wheel_right not set");
-      // exit(-1);
-    }
-
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
     sub_joint_state_ = create_subscription<sensor_msgs::msg::JointState>(
@@ -83,18 +70,18 @@ public:
     pub_odom_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
     pub_path_ = create_publisher<nav_msgs::msg::Path>("blue/path", 10);
 
-    init_config_service = this->create_service<nuturtle_control::srv::InitConfig>(
+    init_config_service = create_service<nuturtle_control::srv::InitConfig>(
       "/initial_pose", std::bind(
         &Odometry::init_pose_callback, this,
         std::placeholders::_1, std::placeholders::_2));
 
     odom.header.frame_id = odom_id;
     odom.child_frame_id = body_id;
-    odom.header.stamp = this->get_clock()->now();
+    odom.header.stamp = get_clock()->now();
     robot.initialize(track_width, wheel_radius, turtlelib::Transform2D());
     odom_tf_.header.frame_id = odom_id;
     odom_tf_.child_frame_id = body_id;
-    odom_tf_.header.stamp = this->get_clock()->now();
+    odom_tf_.header.stamp = get_clock()->now();
   }
 
 private:
@@ -123,7 +110,7 @@ private:
     pub_odom_->publish(odom);
 
     // Publish Transform
-    odom_tf_.header.stamp = this->get_clock()->now();
+    odom_tf_.header.stamp = get_clock()->now();
     odom_tf_.transform.translation.x = Tsb_.translation().x;
     odom_tf_.transform.translation.y = Tsb_.translation().y;
     odom_tf_.transform.rotation.x = q.x();
@@ -133,10 +120,10 @@ private:
     tf_broadcaster_->sendTransform(odom_tf_);
 
     // Publish path
-    robot_path_.header.stamp = this->get_clock()->now();
+    robot_path_.header.stamp = get_clock()->now();
     robot_path_.header.frame_id = odom_id;
     geometry_msgs::msg::PoseStamped robot_pose_;    
-    robot_pose_.header.stamp = this->get_clock()->now();
+    robot_pose_.header.stamp = get_clock()->now();
     robot_pose_.header.frame_id = odom_id;
     robot_pose_.pose.position.x = Tsb_.translation().x;
     robot_pose_.pose.position.y = Tsb_.translation().y;

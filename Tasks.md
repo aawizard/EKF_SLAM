@@ -54,11 +54,11 @@
     - [x] Task F.6
 
 - [ ] The Visualization - Task V
-    - [ ] Task V.1
+    - [x] Task V.1
     - [x] Task V.2
     - [x] Task V.3
-    - [ ] Task V.4
+    - [x] Task V.4
 
 - [ ] SLAM - Task L
     - [x] Task L.1
-    - [ ] Task L.2
+    - [x] Task L.2

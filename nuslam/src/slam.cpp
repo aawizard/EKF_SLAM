@@ -4,10 +4,6 @@
 ///PARAMETERS:
 ///    \param body_id (string): body id of the robot
 ///    \param odom_id (string): odometry id of the robot
-///    \param wheel_left (string): left wheel joint name
-///    \param wheel_right (string): right wheel joint name
-///    \param wheel_radius (double): radius of the wheels[m]
-///    \param track_width (double): distance between the wheels[m]
 ///PUBLISHES:
 ///    \param green/path (nav_msgs::msg::Path): path of the robot
 ///SUBSCRIBES:
@@ -38,43 +34,19 @@ using namespace std::chrono_literals;
 /// \brief subscribes to joint states and publishes odometry of the robot
 /// \param body_id - body id of the robot
 /// \param odom_id - odometry id of the robot
-/// \param wheel_left - left wheel joint name
-/// \param wheel_right - right wheel joint name
-/// \param wheel_radius - radius of the wheels[m]
-/// \param track_width - distance between the wheels[m]
 class Slam : public rclcpp::Node
 {
 public:
   Slam()
   : Node("slam")
-  {    declare_parameter("body_id", "");
+  {
+    declare_parameter("body_id", "green/base_footprint");
     declare_parameter("odom_id", "odom");
-    declare_parameter("wheel_left", "");
-    declare_parameter("wheel_right", "");
-    declare_parameter("wheel_radius", -1.0);
-    declare_parameter("track_width", -1.0);
-    declare_parameter("input_noise", 0.001);
+
 
     body_id = get_parameter("body_id").as_string();
     odom_id = get_parameter("odom_id").as_string();
-    wheel_left = get_parameter("wheel_left").as_string();
-    wheel_right = get_parameter("wheel_right").as_string();
-    wheel_radius = get_parameter("wheel_radius").as_double();
-    track_width = get_parameter("track_width").as_double();
-    input_noise = get_parameter("input_noise").as_double();
 
-    if (body_id == "") {
-      RCLCPP_ERROR_STREAM(get_logger(), "body_id not set");
-      exit(-1);
-    }
-    if (wheel_left == "") {
-      RCLCPP_ERROR_STREAM(get_logger(), "wheel_left not set");
-      exit(-1);
-    }
-    if (wheel_right == "") {
-      RCLCPP_ERROR_STREAM(get_logger(), "wheel_right not set");
-      exit(-1);
-    }
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
     sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
@@ -88,10 +60,10 @@ public:
 
     odom_robot_tf_.header.frame_id = odom_id;
     odom_robot_tf_.child_frame_id = body_id;
-    odom_robot_tf_.header.stamp = this->get_clock()->now();
+    odom_robot_tf_.header.stamp = get_clock()->now();
     map_odom_.header.frame_id = "map";
     map_odom_.child_frame_id = odom_id;
-    map_odom_.header.stamp = this->get_clock()->now();
+    map_odom_.header.stamp = get_clock()->now();
   }
 
 private:
@@ -105,20 +77,22 @@ private:
     turtlelib::Twist2D twist{msg->twist.twist.linear.x, 0, yaw};
     T_del *= turtlelib::integrate_twist(twist);
     // T_del = turtlelib::Transform2D(turtlelib::Vector2D{twist.x, twist.y}, twist.omega);
-    Tob_ = turtlelib::Transform2D(turtlelib::Vector2D{msg->pose.pose.position.x, msg->pose.pose.position.y}, yaw);
-    
+    Tob_ = turtlelib::Transform2D(
+      turtlelib::Vector2D{msg->pose.pose.position.x,
+        msg->pose.pose.position.y}, yaw);
+
     // Publish Transform
-    odom_robot_tf_.header.stamp = this->get_clock()->now();
+    odom_robot_tf_.header.stamp = get_clock()->now();
     odom_robot_tf_.transform.translation.x = Tob_.translation().x;
     odom_robot_tf_.transform.translation.y = Tob_.translation().y;
     odom_robot_tf_.transform.rotation = q;
     tf_broadcaster_->sendTransform(odom_robot_tf_);
 
     // Publish path
-    robot_path_.header.stamp = this->get_clock()->now();
+    robot_path_.header.stamp = get_clock()->now();
     robot_path_.header.frame_id = "map";
-    geometry_msgs::msg::PoseStamped robot_pose_;    
-    robot_pose_.header.stamp = this->get_clock()->now();
+    geometry_msgs::msg::PoseStamped robot_pose_;
+    robot_pose_.header.stamp = get_clock()->now();
     robot_pose_.header.frame_id = "map";
     robot_pose_.pose.position.x = Tmb_.translation().x;
     robot_pose_.pose.position.y = Tmb_.translation().y;
@@ -133,14 +107,21 @@ private:
     Tmb_ = Tmo_ * Tob_;
     //EKF SLAM Step 1 - Prediction Step
     //getting the state space model g(x,u,0)
-    ekf.Prior_update(Tmb_, T_del);     
-    T_del = turtlelib::Transform2D();
+    // RCLCPP_INFO_STREAM(get_logger(),"size: "<<msg->markers.size());
     //Subscribing to fake sensor data
-    for (int i = 0; i < static_cast<int>(msg->markers.size()); i++){
-      ekf.update_observation( msg->markers[i].pose.position.x, msg->markers[i].pose.position.y, msg->markers[i].id);
-      ekf.object_observed(Tmb_, msg->markers[i].pose.position.x, msg->markers[i].pose.position.y, msg->markers[i].id);
+    for (int i = 0; i < static_cast<int>(msg->markers.size()); i++) {
+      if (msg->markers[i].action == visualization_msgs::msg::Marker::ADD) {
+        ekf.update_observation(
+          msg->markers[i].pose.position.x, msg->markers[i].pose.position.y,
+          msg->markers[i].id);
+        ekf.object_observed(
+          Tmb_, msg->markers[i].pose.position.x, msg->markers[i].pose.position.y,
+          msg->markers[i].id);
+      }
     }
-   
+
+    ekf.Prior_update(Tmb_, T_del);
+    T_del = turtlelib::Transform2D();
     ekf.update_measurement_model();
     ekf.posterior();
     state_ = ekf.get_state();
@@ -149,7 +130,7 @@ private:
     Tmb_ = turtlelib::Transform2D(turtlelib::Vector2D{state_[1], state_[2]}, state_[0]);
     Tmo_ = Tmb_ * Tob_.inv();
     // Publish map to odom transform
-    map_odom_.header.stamp = this->get_clock()->now();
+    map_odom_.header.stamp = get_clock()->now();
     map_odom_.transform.translation.x = Tmo_.translation().x;
     map_odom_.transform.translation.y = Tmo_.translation().y;
     tf2::Quaternion q;
@@ -159,12 +140,13 @@ private:
     map_odom_.transform.rotation.z = q.z();
     map_odom_.transform.rotation.w = q.w();
     tf_broadcaster_->sendTransform(map_odom_);
-    
+
     publish_estimate_markers();
   }
- 
+
 /// \brief    Function to change quaternion to euler angles and get yaw
-  double euler_from_quaternion_yaw(geometry_msgs::msg::Quaternion quaternion){
+  double euler_from_quaternion_yaw(geometry_msgs::msg::Quaternion quaternion)
+  {
     auto x = quaternion.x;
     auto y = quaternion.y;
     auto z = quaternion.z;
@@ -174,27 +156,41 @@ private:
     return std::atan2(siny_cosp, cosy_cosp);
   }
 
-  void publish_estimate_markers(){
+  void publish_estimate_markers()
+  {
+    auto z_pred = ekf.get_z_pred();
     visualization_msgs::msg::MarkerArray markers;
     visualization_msgs::msg::Marker marker;
-    for (int i=0; i<max_obs;i++){
+    for (int i = 0; i < max_obs; i++) {
       marker.id = i;
-      if(!turtlelib::almost_equal(state_[3+2*i], 0.0) || !turtlelib::almost_equal(state_[3+2*i+1], 0.0)){
+      if (!turtlelib::almost_equal(
+          state_[3 + 2 * i],
+          0.0) || !turtlelib::almost_equal(state_[3 + 2 * i + 1], 0.0))
+      {
+      // if (!turtlelib::almost_equal(
+      //     z_pred[2 * i],
+      //     0.0) || !turtlelib::almost_equal(z_pred[2 * i + 1], 0.0))
+      // {
         marker.header.frame_id = "map";
-        marker.header.stamp = this->get_clock()->now();
-        
+        // marker.header.frame_id = "green/base_footprint";
+        marker.frame_locked = true;
+        marker.header.stamp = get_clock()->now();
+
         marker.type = visualization_msgs::msg::Marker::CYLINDER;
         marker.action = visualization_msgs::msg::Marker::ADD;
-        marker.pose.position.x = state_[3+2*i];
-        marker.pose.position.y = state_[3+2*i+1];
-        marker.pose.position.z = wall_height/2;
-        marker.scale.x = 0.07;
-        marker.scale.y = 0.07;
+        marker.pose.position.x = state_[3 + 2 * i];
+        marker.pose.position.y = state_[3 + 2 * i + 1];
+        // auto xx = z_pred[2 * i] * cos(z_pred[2 * i + 1]);
+        // auto yy = z_pred[2 * i] * sin(z_pred[2 * i + 1]);
+        // marker.pose.position.x = xx;
+        // marker.pose.position.y = yy;
+        marker.pose.position.z = wall_height / 2;
+        marker.scale.x = 0.05;
+        marker.scale.y = 0.05;
         marker.scale.z = wall_height;
-        marker.color.a = 1.0;
+        marker.color.a = 0.5;
         marker.color.g = 1.0;
-      }
-      else{
+      } else {
         marker.action = visualization_msgs::msg::Marker::DELETE;
       }
       markers.markers.push_back(marker);
@@ -202,16 +198,15 @@ private:
     pub_estimate_obs_->publish(markers);
   }
 
-   std::mt19937 & get_random()
+  std::mt19937 & get_random()
   {
     // static variables inside a function are created once and persist for the remainder of the program
     static std::random_device rd{};
     static std::mt19937 mt{rd()};
     return mt;
   }
-  
 
-  
+
   std::string body_id = "";
   std::string odom_id = "";
   std::string wheel_left = "";
@@ -221,7 +216,7 @@ private:
   double left_wheel_joint = 0.0;
   double right_wheel_joint = 0.0;
   double input_noise = 0.0;
-  int max_obs = 2;
+  int max_obs = 10;
   double wall_height = 0.25;
   bool first = true;
   nav_msgs::msg::Odometry odom;
@@ -231,11 +226,11 @@ private:
   turtlelib::Transform2D Tmo_;   // Transform from map to odom
   turtlelib::Transform2D Tmb_;   // Transform from map to base
   turtlelib::Transform2D Tob_;   // Transform from odom to base
-  turtlelib::Transform2D T_del = turtlelib::Transform2D();  // Transform from odom to base in time 200ms 
+  turtlelib::Transform2D T_del = turtlelib::Transform2D();  // Transform from odom to base in time 200ms
   turtlelib::Ekf_slam ekf = turtlelib::Ekf_slam(max_obs);
 
-  
-  arma::Col<double> state_ = arma::vec(3+2*max_obs,arma::fill::zeros);  // State vector
+
+  arma::Col<double> state_ = arma::vec(3 + 2 * max_obs, arma::fill::zeros);  // State vector
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;

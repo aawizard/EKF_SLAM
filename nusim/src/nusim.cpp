@@ -234,12 +234,12 @@ private:
     std::uniform_real_distribution<> u(-slip_fraction, slip_fraction);
     double slip_noise = u(get_random());
 
-    // if (!turtlelib::almost_equal(new_left_wheel_joint, 0.0)) {
-    //   new_left_wheel_joint += d(get_random());
-    // }
-    // if (!turtlelib::almost_equal(new_right_wheel_joint, 0.0)) {
-    //   new_right_wheel_joint += d(get_random());
-    // }
+    if (!turtlelib::almost_equal(new_left_wheel_joint, 0.0)) {
+      new_left_wheel_joint += d(get_random());
+    }
+    if (!turtlelib::almost_equal(new_right_wheel_joint, 0.0)) {
+      new_right_wheel_joint += d(get_random());
+    }
 
     //Save the wheel commands
     left_wheel_joint += (new_left_wheel_joint * encoder_ticks_per_rev_sec_ );
@@ -434,7 +434,7 @@ private:
       obstacle.header.stamp = get_clock()->now();
       obstacle.type = visualization_msgs::msg::Marker::CYLINDER;
 
-      for (int i = 0; i < int(obstacle_x_.size()) - 1; ++i) {
+      for (int i = 0; i < int(obstacle_x_.size()) - 0; ++i) {
         obstacle.id = i;
         if (dist(i, max_range)) {
           std::normal_distribution<> d(0, basic_sensor_variance);

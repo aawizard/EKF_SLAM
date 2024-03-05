@@ -50,6 +50,10 @@ namespace turtlelib
         /// \returns the covariance matrix.
         arma::Mat<double> get_sigma();  
 
+         /// \brief Get the predicted observation.
+         /// \returns the predicted observation.
+        arma::Col<double> get_z_pred();
+
         /// \brief Compute the covariance matrix.
         /// \param T_del - the transformation from the previous state to the new state.
         /// \returns the covariance matrix.
