@@ -12,7 +12,7 @@ Ekf_slam::Ekf_slam(int maxobs)
   z_pred = arma::zeros<arma::Col<double>>(2 * max_obs);
   z_obs = arma::zeros<arma::Col<double>>(2 * max_obs);
   H = arma::zeros<arma::Mat<double>>(2 * max_obs, 3 + 2 * max_obs);
-  R = arma::Mat<double>(2 * max_obs, 2 * max_obs, arma::fill::eye);
+  R = arma::Mat<double>(2 * max_obs, 2 * max_obs, arma::fill::eye) * 0.001;
   Q = arma::zeros<arma::Mat<double>>(3, 3);
 
   sigma_ = arma::join_cols(
@@ -67,8 +67,6 @@ void Ekf_slam::Prior_update(Transform2D state, Transform2D T_del)
   arma::Mat<double> Q = arma::join_cols(
     arma::join_rows(arma::eye(3, 3), arma::Mat<double>(3, 2 * max_obs, arma::fill::zeros)),
     arma::Mat<double>(2 * max_obs, 3 + 2 * max_obs, arma::fill::zeros));
-  // Q.submat(0,0,2,2).diag() = arma::randn(3);
-  // Q = Q * 0.00001;
   Q.submat(0, 0, 2, 2).diag() = arma::vec{0.00001, 0.00001, 0.00001};
   sigma_ = A * sigma_ * A.t() + Q;
 }
@@ -137,10 +135,7 @@ void Ekf_slam::update_measurement_model()
 
 void Ekf_slam::posterior()
 {
-  // R.diag() = arma::randn(2*max_obs);
-  R.diag() = arma::vec(2 * max_obs, arma::fill::ones) * 0.001;
-  // R = R * 0.001;
-
+  // R.diag() = arma::vec(2 * max_obs, arma::fill::ones) * 0.001;
   arma::Mat<double> S = (H * sigma_ * H.t()) + R;
   arma::Mat<double> K = sigma_ * H.t() * S.i();
   arma::Col<double> z_diff = z_obs - z_pred;

@@ -19,6 +19,7 @@ add_library(turtlelib src/geometry2d.cpp
                       src/svg.cpp
                       src/diff_drive.cpp
                       src/ekf_slam.cpp
+                      src/landmark_calc.cpp
                       )
 
 # Use target_include_directories so that #include"mylibrary/header.hpp" works

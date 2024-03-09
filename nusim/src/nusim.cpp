@@ -567,7 +567,8 @@ private:
       turtlelib::Vector2D p = get_point(i);
 
       // double d = turtlelib::magnitude(p);
-      scan_data.ranges.push_back(get_obs_dist(p) + d(get_random()));
+      // scan_data.ranges.push_back(get_obs_dist(p) + d(get_random()));
+      scan_data.ranges.push_back(get_obs_dist(p) );
     }
   }
 

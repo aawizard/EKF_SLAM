@@ -1,5 +1,8 @@
 /// \file slam.cpp
-/// \brief Subscribes to joint states and publishes odometry of the robot
+/// \brief Implements the slam node. 
+/// \brief Subscribes to odometry and fake sensor data and publishes the estimated observations.
+/// \brief Publishes the path of the robot.
+/// \brief Implemets EKF SLAM for a maximum number of obstacles.
 ///
 ///PARAMETERS:
 ///    \param body_id (string): body id of the robot
@@ -31,7 +34,10 @@
 using namespace std::chrono_literals;
 // using namespace turtlelib;
 
-/// \brief subscribes to joint states and publishes odometry of the robot
+/// \brief Implemen. 
+
+
+/// \brief Implemets for a maximum number of obstacles 
 /// \param body_id - body id of the robot
 /// \param odom_id - odometry id of the robot
 class Slam : public rclcpp::Node
@@ -185,10 +191,10 @@ private:
         // marker.pose.position.x = xx;
         // marker.pose.position.y = yy;
         marker.pose.position.z = wall_height / 2;
-        marker.scale.x = 0.05;
-        marker.scale.y = 0.05;
+        marker.scale.x = 0.03;
+        marker.scale.y = 0.03;
         marker.scale.z = wall_height;
-        marker.color.a = 0.5;
+        marker.color.a = 1.0;
         marker.color.g = 1.0;
       } else {
         marker.action = visualization_msgs::msg::Marker::DELETE;
@@ -198,27 +204,11 @@ private:
     pub_estimate_obs_->publish(markers);
   }
 
-  std::mt19937 & get_random()
-  {
-    // static variables inside a function are created once and persist for the remainder of the program
-    static std::random_device rd{};
-    static std::mt19937 mt{rd()};
-    return mt;
-  }
-
 
   std::string body_id = "";
   std::string odom_id = "";
-  std::string wheel_left = "";
-  std::string wheel_right = "";
-  double wheel_radius = 0.0;
-  double track_width = 0.0;
-  double left_wheel_joint = 0.0;
-  double right_wheel_joint = 0.0;
-  double input_noise = 0.0;
   int max_obs = 10;
-  double wall_height = 0.25;
-  bool first = true;
+  double wall_height = 0.3;
   nav_msgs::msg::Odometry odom;
   geometry_msgs::msg::TransformStamped odom_robot_tf_;
   geometry_msgs::msg::TransformStamped map_odom_;

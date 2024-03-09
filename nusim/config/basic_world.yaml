@@ -4,10 +4,10 @@
     x0: 0.0
     y0: 0.0
     theta0: 0.0
-    arena_x_length: 10.0
-    arena_y_length: 10.0
+    arena_x_length: 5.0
+    arena_y_length: 5.0
     obstacles/x: [ -0.5, 0.8, 0.8, -1.1, 1.5, -0.9, -1.5]
     obstacles/y: [ -0.7, -0.8, 0.8, 0.9, 0.2, -1.0, 0.0]
 
-    obstacles/radius: 0.03
+    obstacles/radius: 0.04
    
