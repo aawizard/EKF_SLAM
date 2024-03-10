@@ -1,5 +1,5 @@
 /// \file slam.cpp
-/// \brief Implements the slam node. 
+/// \brief Implements the slam node.
 /// \brief Subscribes to odometry and fake sensor data and publishes the estimated observations.
 /// \brief Publishes the path of the robot.
 /// \brief Implemets EKF SLAM for a maximum number of obstacles.
@@ -34,10 +34,10 @@
 using namespace std::chrono_literals;
 // using namespace turtlelib;
 
-/// \brief Implemen. 
+/// \brief Implemen.
 
 
-/// \brief Implemets for a maximum number of obstacles 
+/// \brief Implemets for a maximum number of obstacles
 /// \param body_id - body id of the robot
 /// \param odom_id - odometry id of the robot
 class Slam : public rclcpp::Node
@@ -173,10 +173,10 @@ private:
           state_[3 + 2 * i],
           0.0) || !turtlelib::almost_equal(state_[3 + 2 * i + 1], 0.0))
       {
-      // if (!turtlelib::almost_equal(
-      //     z_pred[2 * i],
-      //     0.0) || !turtlelib::almost_equal(z_pred[2 * i + 1], 0.0))
-      // {
+        // if (!turtlelib::almost_equal(
+        //     z_pred[2 * i],
+        //     0.0) || !turtlelib::almost_equal(z_pred[2 * i + 1], 0.0))
+        // {
         marker.header.frame_id = "map";
         // marker.header.frame_id = "green/base_footprint";
         marker.frame_locked = true;

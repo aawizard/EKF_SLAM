@@ -22,6 +22,7 @@ namespace turtlelib
         arma::Mat<double> H;
         arma::Mat<double> R;
         arma::Mat<double> Q;
+        int landmarks_observed = 0;
         int max_obs = 100;
 
      public:
@@ -40,6 +41,7 @@ namespace turtlelib
 
         /// \brief Prior update.
         /// \param state - the new state of the robot.
+         /// \param T_del - the transformation from the previous state to the new state.
         void Prior_update(Transform2D state, Transform2D T_del);
 
         /// \brief Get the state.
@@ -59,6 +61,12 @@ namespace turtlelib
         /// \returns the covariance matrix.
         arma::Mat<double> compute_covariance(Transform2D T_del);
 
+      /// \brief Get the observation id.
+      /// \param Tmb - the transformation from the map to the base frame.
+      /// \param x - x coordinate of the observed object.
+      /// \param y - y coordinate of the observed object.
+      /// \returns the id of the observed object.
+      int data_association(Transform2D Tmb, double x, double y);
 
         /// \brief Update the observation.
         /// \param id - the id of the observed object.

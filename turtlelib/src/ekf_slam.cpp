@@ -152,4 +152,25 @@ arma::Col<double> Ekf_slam::get_z_pred()
 {
   return z_pred;
 }
+
+int Ekf_slam::data_association(Transform2D Tmb, double x, double y)
+{
+  auto Tmobs = Tmb * turtlelib::Transform2D(turtlelib::Vector2D{x, y}, 0.0);
+  auto x_ = Tmobs.translation().x;
+  auto y_ = Tmobs.translation().y;
+  auto r = sqrt(pow(x_, 2) + pow(y_, 2));
+  auto theta = normalize_angle(atan2(y_, x_));
+
+
+  int id = landmarks_observed + 1;
+  for(int i = 0; i < landmarks_observed; i++){
+    arma::Mat<double> H_k = arma::mat(2,3+2*max_obs,arma::fill::zeros);
+    arma::Col<double> z_pred_k = get_polar_coordinates(state_.at(3+2*i),state_.at(3+2*i+1));
+    
+  }
+  
+  return id;
 }
+
+}  // namespace turtlelib
+

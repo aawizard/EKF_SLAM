@@ -9,7 +9,7 @@ project(turtlelib)
 # here: we find the eigen library as per the instruction
 # https://eigen.tuxfamily.org/dox/TopicCMakeGuide.html
 # find_package(Eigen3 3.3 REQUIRED)
-
+find_package(Armadillo REQUIRED)
 # Create a library.  Can specify if it is shared or static but usually
 # you don't need or want to.
 # name is the name of the library without the extension or lib prefix
@@ -108,19 +108,30 @@ include(CTest)
 if(BUILD_TESTING)
     # Find the Unit testing framework. In this example, Catch2
     find_package(Catch2 3 REQUIRED)
-
+    find_package(Armadillo REQUIRED)
+    find_package(LAPACK REQUIRED)
+    find_package(BLAS REQUIRED)
+    include_directories(include ${ARMADILLO_INCLUDE_DIRS})
+    # add_definitions(-DARMA_DONT_USE_WRAPPER)
     # A test is just an executable that is linked against the unit testing library
     add_executable(my_test_exe tests/test_geometry2d.cpp 
                                tests/test_se2d.cpp 
                                tests/test_svg.cpp
                                tests/test_diff_drive.cpp
-                               tests/test_ekf_slam.cpp)
+                               )
+    add_executable(test_arma_lib tests/test_ekf_slam.cpp
+                                 tests/test_landmark_calc.cpp)
     target_link_libraries(my_test_exe Catch2::Catch2WithMain turtlelib)
+    target_link_libraries(test_arma_lib PRIVATE Catch2::Catch2WithMain turtlelib ${ARMADILLO_LIBRARIES} ${LAPACK_LIBRARIES} ${BLAS_LIBRARIES})
+
     target_include_directories(my_test_exe
     PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
     $<INSTALL_INTERFACE:include/>)
 
+    target_include_directories(test_arma_lib PUBLIC ${ARMADILLO_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/include/)
+
     # register the test with CTest, telling it what executable to run
     add_test(NAME the_test_name COMMAND my_test_exe)
+    add_test(NAME test_arma_test COMMAND test_arma_lib)
 endif()

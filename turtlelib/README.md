@@ -6,6 +6,8 @@ A library for handling transformations in SE(2) and other turtlebot-related math
 - se2d - Handles 2D rigid body transformations
 - frame_main - Perform some rigid body computations based on user input
 - diff_drive - Handles Inverse and Forward Kinematics of a robot
+- ekf_slam - Implements the EKF slam calculations
+- landmark_calc - implemets circle fitting for the laser data and return landmark coordinates and radius.
 
 # Conceptual Questions
 1. If you needed to be able to ~normalize~ Vector2D objects (i.e., find the unit vector in the direction of a given Vector2D):

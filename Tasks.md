@@ -8,7 +8,7 @@
     - [x] Task A.5
     - [x] Task A.6
 
-- [ ] C++ and 2D Transforms - Task B
+- [x] C++ and 2D Transforms - Task B
     - [x] Task B.1
     - [x] Task B.2
     - [x] Task B.3
@@ -20,7 +20,7 @@
     - [x] Task B.9
     
 
-- [ ] The Simulator - Task C
+- [x] The Simulator - Task C
     - [x] Task C.1
     - [x] Task C.2
     - [x] Task C.3
@@ -34,12 +34,12 @@
     - [x] Task C.11
     - [x] Task C.12 (Complete the Readme)
 
-- [ ] Kinematics - Task D
+- [x] Kinematics - Task D
     - [x] Task D.1
     - [x] Task D.2
     - [x] Task D.3
   
-- [ ] Robot Control - Task E
+- [x] Robot Control - Task E
     - [x] Task E.1
     - [x] Task E.2
     - [x] Task E.3
@@ -47,13 +47,13 @@
     - [x] Task E.5
     - [x] Task E.6 (Complete the readme)
 
-- [ ] The Real Robot - Task F
+- [x] The Real Robot - Task F
     - [x] Task F.1
     - [x] Task F.2
     - [x] Task F.5
     - [x] Task F.6
 
-- [ ] The Visualization - Task V
+- [x] The Visualization - Task V
     - [x] Task V.1
     - [x] Task V.2
     - [x] Task V.3
@@ -65,6 +65,6 @@
     - [ ] Task L.3
     - [ ] Task L.4
     
-- [ ] Feature Detection - Task S
-    - [ ] Task S.1
-    - [ ] Task S.2
+- [x] Feature Detection - Task S
+    - [x] Task S.1
+    - [x] Task S.2
