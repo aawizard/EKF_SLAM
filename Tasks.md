@@ -62,7 +62,7 @@
 - [ ] SLAM - Task L
     - [x] Task L.1
     - [x] Task L.2
-    - [ ] Task L.3
+    - [x] Task L.3
     - [ ] Task L.4
     
 - [x] Feature Detection - Task S

@@ -22,7 +22,7 @@ namespace turtlelib
         arma::Mat<double> H;
         arma::Mat<double> R;
         arma::Mat<double> Q;
-        int landmarks_observed = 0;
+        int landmarks_observed = -1;
         int max_obs = 100;
 
      public:
@@ -66,7 +66,7 @@ namespace turtlelib
       /// \param x - x coordinate of the observed object.
       /// \param y - y coordinate of the observed object.
       /// \returns the id of the observed object.
-      int data_association(Transform2D Tmb, double x, double y);
+      int data_association(Transform2D Tmb ,double x, double y);
 
         /// \brief Update the observation.
         /// \param id - the id of the observed object.
@@ -84,5 +84,8 @@ namespace turtlelib
 
         /// \brief Update step for SLAM
         void posterior();
+
+      
+
      };
 }

@@ -47,6 +47,20 @@ private:
       msg->angle_increment);
     landmarklib.cluster_laser_data();
     auto clusters = landmarklib.get_clusters();
+    // Remove a cluster id the points are too close
+    for (int i = 0; i < static_cast<int>(clusters.size()); i++) {
+      for(int j = i + 1; j < static_cast<int>(clusters.size()); ){
+        auto dx = clusters[i][0].x - clusters[j][0].x;
+        auto dy = clusters[i][0].y - clusters[j][0].y;
+        auto dist = sqrt(dx * dx + dy * dy);
+        if (dist < 0.2) {
+          clusters.erase(clusters.begin() + j);
+        } else {
+          j++;
+        }
+      }
+    }
+
     auto landmark_centroids = landmarklib.get_landmark_centroids();
     publish_clusters(clusters);
     publish_estimate_markers(landmark_centroids);
@@ -55,12 +69,14 @@ private:
   /// \brief Publish clusters as markers
   void publish_clusters(const std::vector<std::vector<turtlelib::Vector2D>> & clusters)
   {
-    visualization_msgs::msg::MarkerArray markers;
-    visualization_msgs::msg::Marker marker;
-    auto reading = 0;
+    markers_points.markers.clear();
+   
+    
+    int reading = 0;
     auto cluster_count = 1;
     for (const auto & cluster : clusters) {
       for (const auto & point : cluster) {
+        visualization_msgs::msg::Marker marker;
         marker.id = reading;
         marker.header.frame_id = "red/base_scan";
         marker.header.stamp = get_clock()->now();
@@ -86,22 +102,23 @@ private:
           marker.color.g = 1.0;
           marker.color.b = 0.0;
         }
-        markers.markers.push_back(marker);
+        markers_points.markers.push_back(marker);
         reading++;
       }
       cluster_count++;
     }
-    pub_estimate_landmark_laser->publish(markers);
+    pub_estimate_landmark_laser->publish(markers_points);
   }
 
   void publish_estimate_markers(std::vector<std::vector<double>> landmark_centroids)
   {
     double wall_height = 0.3;
     auto marker_count = 0;
-    visualization_msgs::msg::MarkerArray markers;
+    
+    markers.markers.clear();
     visualization_msgs::msg::Marker marker;
     for (int i = 0; i < static_cast<int>(landmark_centroids.size()); i++) {
-      if (landmark_centroids[i][2] > 0.1) {
+      if (landmark_centroids[i][2] > 0.06) {
         continue;
       }
       marker.id = marker_count++;
@@ -116,14 +133,15 @@ private:
       marker.scale.x = landmark_centroids[i][2] * 2;
       marker.scale.y = landmark_centroids[i][2] * 2;
       marker.scale.z = wall_height;
-      marker.color.a = 1.0;
-      marker.color.g = 1.0;
+      marker.color.a = 0.5;
+      marker.color.b = 1.0;
       markers.markers.push_back(marker);
     }
     pub_estimate_landmark_->publish(markers);
   }
 
-
+  visualization_msgs::msg::MarkerArray markers_points;
+  visualization_msgs::msg::MarkerArray markers;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_laser;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_estimate_landmark_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_estimate_landmark_laser;

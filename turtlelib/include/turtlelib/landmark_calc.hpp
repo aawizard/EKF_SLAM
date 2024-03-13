@@ -55,6 +55,20 @@ namespace turtlelib
             /// \return (Vector2D): The centroid of the cluster.
             std::vector<double> circle_fitting(std::vector<Vector2D> cluster);
 
+            /// \brief Get the centroid of the cluster.
+            /// \details This function returns the centroid of the cluster.
+            /// \param cluster (std::vector<Vector2D>): The cluster.
+            /// \return (Vector2D): The centroid of the cluster.
+            Vector2D get_centroid(std::vector<Vector2D> cluster);
+
+
+            /// \brief Close clusters.
+            /// \details This function checks if two clusters are close to each other.
+            /// \param cluster1 (std::vector<Vector2D>): The first cluster.
+            /// \param cluster2 (std::vector<Vector2D>): The second cluster.
+            /// \return (bool): True if the clusters are close to each other, false otherwise.
+            bool close_clusters(std::vector<Vector2D> cluster1, std::vector<Vector2D> cluster2);
+
 
 
     };

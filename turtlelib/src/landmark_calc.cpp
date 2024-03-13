@@ -37,7 +37,7 @@ void Landmarklib::cluster_laser_data()
 {
   double threshold = 0.20;
   Vector2D last_point = get_cartesian_coordinates(sensor_reading.at(0), angle_min);
-  clusters = {};
+  clusters.clear();
   std::vector<Vector2D> cluster;
   auto theta = angle_min;
   // Iterate over sensor_reading
@@ -48,25 +48,35 @@ void Landmarklib::cluster_laser_data()
     if (check_threshold(last_point, point, threshold)) {
       cluster.push_back(point);
     } else {
-      clusters.push_back(cluster);
-      cluster = {point};
+      if (!cluster.empty()) {
+                    clusters.push_back(cluster);
+                    cluster.clear();
+                }
+                cluster.push_back(point);
+            }
+            last_point = point;
     }
-    last_point = point;
-  }
   //Wrap up the last cluster
   auto fisrt_cluster_point = clusters.at(0).at(0);
-  auto last_cluster_point = clusters.at(clusters.size() - 1).at(
-    clusters.at(
-      clusters.size() - 1).size() - 1);
-  if (check_threshold(fisrt_cluster_point, last_cluster_point, threshold)) {
+  auto last_cluster_point = clusters.back().back();
+  if (check_threshold(fisrt_cluster_point, last_cluster_point, threshold + 0.1)) {
     clusters.at(0).insert(
-      clusters.at(0).end(), clusters.at(
-        clusters.size() - 1).begin(), clusters.at(clusters.size() - 1).end());
+      clusters.at(0).end(), clusters.back().begin(), clusters.back().end());
     clusters.pop_back();
   }
+  //Merge close clusters
+  for(int i = 0; i < static_cast<int>(clusters.size()); i++){
+    for(int j = i+1; j < static_cast<int>(clusters.size());){
+      if(close_clusters(clusters.at(i), clusters.at(j))){
+        clusters.at(i).insert(clusters.at(i).end(), clusters.at(j).begin(), clusters.at(j).end());
+        clusters.erase(clusters.begin() + j);
+      } else {
+            j++; // Increment j only if no merge occurred
+        }
+    }
+  }
 
-
-  // Return clusters with less then 2 points
+    // Return clusters with less then 2 points
   for (auto it = clusters.begin(); it != clusters.end(); ) {
     if (it->size() < 4) {
       it = clusters.erase(it);
@@ -75,6 +85,8 @@ void Landmarklib::cluster_laser_data()
     }
   }
 }
+
+
 
 std::vector<std::vector<Vector2D>> Landmarklib::get_clusters()
 {
@@ -93,6 +105,26 @@ std::vector<std::vector<double>> Landmarklib::get_landmark_centroids()
   return landmark_centroids;
 }
 
+Vector2D Landmarklib::get_centroid(std::vector<Vector2D> cluster)
+{
+  Vector2D sum = {0, 0};
+  for (auto point : cluster) {
+    sum += point;
+  }
+  sum.x = sum.x / cluster.size();
+  sum.y = sum.y / cluster.size();
+  return sum;
+}
+
+bool Landmarklib::close_clusters(std::vector<Vector2D> cluster1, std::vector<Vector2D> cluster2)
+{
+  Vector2D centroid1 = Landmarklib::get_centroid(cluster1);
+  Vector2D centroid2 = Landmarklib::get_centroid(cluster2);
+  if(magnitude(centroid1 - centroid2) < 0.3){
+    return true;
+  }
+  return false;
+}
 
 std::vector<double> Landmarklib::circle_fitting(std::vector<Vector2D> cluster)
 {

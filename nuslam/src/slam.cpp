@@ -47,18 +47,25 @@ public:
   : Node("slam")
   {
     declare_parameter("body_id", "green/base_footprint");
-    declare_parameter("odom_id", "odom");
+    declare_parameter("odom_id", "green/odom");
+    declare_parameter("use_fake_sensor", false);
 
 
     body_id = get_parameter("body_id").as_string();
     odom_id = get_parameter("odom_id").as_string();
+    use_fake_sensor = get_parameter("use_fake_sensor").as_bool();
 
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
 
     sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
       "odom", 10, std::bind(&Slam::odom_callback, this, std::placeholders::_1));
-    sub_fake_sensor_ = create_subscription<visualization_msgs::msg::MarkerArray>(
-      "fake_sensor", 10, std::bind(&Slam::fake_sensor_callback, this, std::placeholders::_1));
+    if(use_fake_sensor){
+      // sub_fake_sensor_ = create_subscription<visualization_msgs::msg::MarkerArray>(
+      //   "fake_sensor", 10, std::bind(&Slam::fake_sensor_callback, this, std::placeholders::_1));
+    } else {
+      sub_fake_sensor_ = create_subscription<visualization_msgs::msg::MarkerArray>(
+        "estimate_landmark", 10, std::bind(&Slam::fake_sensor_callback, this, std::placeholders::_1));
+    }
     pub_estimate_obs_ = create_publisher<visualization_msgs::msg::MarkerArray>("estimate_obs", 10);
 
     // pub_odom_ = create_publisher<nav_msgs::msg::Slam>("odom", 10);
@@ -70,6 +77,7 @@ public:
     map_odom_.header.frame_id = "map";
     map_odom_.child_frame_id = odom_id;
     map_odom_.header.stamp = get_clock()->now();
+    
   }
 
 private:
@@ -109,25 +117,38 @@ private:
 
   void fake_sensor_callback(const visualization_msgs::msg::MarkerArray::SharedPtr msg)
   {
+    
     // Implementing EKF SLAM, Assuming maximum of 30 landmarks
     Tmb_ = Tmo_ * Tob_;
     //EKF SLAM Step 1 - Prediction Step
+    // WIll calculate A matrix and Q matrix
+   
+    T_del = turtlelib::Transform2D();
+
     //getting the state space model g(x,u,0)
-    // RCLCPP_INFO_STREAM(get_logger(),"size: "<<msg->markers.size());
     //Subscribing to fake sensor data
     for (int i = 0; i < static_cast<int>(msg->markers.size()); i++) {
       if (msg->markers[i].action == visualization_msgs::msg::Marker::ADD) {
+        auto id = msg->markers[i].id;
+        if(!use_fake_sensor){
+          RCLCPP_INFO_STREAM(get_logger(), "\n\n obs  " << i);
+          id = ekf.data_association(Tmb_, msg->markers[i].pose.position.x, msg->markers[i].pose.position.y);
+          RCLCPP_INFO_STREAM(get_logger(), "ID: " << id);
+        }
+        if (id < max_obs){
+        // Update the z_obs vector
         ekf.update_observation(
           msg->markers[i].pose.position.x, msg->markers[i].pose.position.y,
-          msg->markers[i].id);
+          id);
+        // Update the state vector
         ekf.object_observed(
           Tmb_, msg->markers[i].pose.position.x, msg->markers[i].pose.position.y,
-          msg->markers[i].id);
+          id);
+      }
       }
     }
-
+  
     ekf.Prior_update(Tmb_, T_del);
-    T_del = turtlelib::Transform2D();
     ekf.update_measurement_model();
     ekf.posterior();
     state_ = ekf.get_state();
@@ -191,8 +212,8 @@ private:
         // marker.pose.position.x = xx;
         // marker.pose.position.y = yy;
         marker.pose.position.z = wall_height / 2;
-        marker.scale.x = 0.03;
-        marker.scale.y = 0.03;
+        marker.scale.x = 0.05;
+        marker.scale.y = 0.05;
         marker.scale.z = wall_height;
         marker.color.a = 1.0;
         marker.color.g = 1.0;
@@ -204,11 +225,12 @@ private:
     pub_estimate_obs_->publish(markers);
   }
 
-
+  bool first = true;
   std::string body_id = "";
   std::string odom_id = "";
   int max_obs = 10;
   double wall_height = 0.3;
+  bool use_fake_sensor = false;
   nav_msgs::msg::Odometry odom;
   geometry_msgs::msg::TransformStamped odom_robot_tf_;
   geometry_msgs::msg::TransformStamped map_odom_;
@@ -236,8 +258,10 @@ private:
 /// @return
 int main(int argc, char * argv[])
 {
-  rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<Slam>());
-  rclcpp::shutdown();
-  return 0;
+
+        rclcpp::init(argc, argv);
+        rclcpp::spin(std::make_shared<Slam>());
+        rclcpp::shutdown();
+        return 0;
+    
 }
