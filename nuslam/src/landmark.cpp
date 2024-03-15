@@ -49,7 +49,7 @@ private:
     auto clusters = landmarklib.get_clusters();
     // Remove a cluster id the points are too close
     for (int i = 0; i < static_cast<int>(clusters.size()); i++) {
-      for(int j = i + 1; j < static_cast<int>(clusters.size()); ){
+      for (int j = i + 1; j < static_cast<int>(clusters.size()); ) {
         auto dx = clusters[i][0].x - clusters[j][0].x;
         auto dy = clusters[i][0].y - clusters[j][0].y;
         auto dist = sqrt(dx * dx + dy * dy);
@@ -70,15 +70,15 @@ private:
   void publish_clusters(const std::vector<std::vector<turtlelib::Vector2D>> & clusters)
   {
     markers_points.markers.clear();
-   
-    
+
+
     int reading = 0;
     auto cluster_count = 1;
     for (const auto & cluster : clusters) {
       for (const auto & point : cluster) {
         visualization_msgs::msg::Marker marker;
         marker.id = reading;
-        marker.header.frame_id = "red/base_scan";
+        marker.header.frame_id = "green/base_scan";
         marker.header.stamp = get_clock()->now();
         marker.type = visualization_msgs::msg::Marker::CYLINDER;
         marker.action = visualization_msgs::msg::Marker::ADD;
@@ -114,15 +114,18 @@ private:
   {
     double wall_height = 0.3;
     auto marker_count = 0;
-    
+
     markers.markers.clear();
     visualization_msgs::msg::Marker marker;
     for (int i = 0; i < static_cast<int>(landmark_centroids.size()); i++) {
       if (landmark_centroids[i][2] > 0.06) {
         continue;
       }
+      if (turtlelib::almost_equal(landmark_centroids[i][0], 0.0, 0.04) || turtlelib::almost_equal(landmark_centroids[i][1], 0.0, 0.04)) {
+        continue;
+      }
       marker.id = marker_count++;
-      marker.header.frame_id = "red/base_scan";
+      marker.header.frame_id = "green/base_scan";
       marker.frame_locked = true;
       marker.header.stamp = get_clock()->now();
 

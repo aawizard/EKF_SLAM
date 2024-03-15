@@ -62,11 +62,10 @@ namespace turtlelib
         arma::Mat<double> compute_covariance(Transform2D T_del);
 
       /// \brief Get the observation id.
-      /// \param Tmb - the transformation from the map to the base frame.
       /// \param x - x coordinate of the observed object.
       /// \param y - y coordinate of the observed object.
       /// \returns the id of the observed object.
-      int data_association(Transform2D Tmb ,double x, double y);
+      int data_association(double x, double y);
 
         /// \brief Update the observation.
         /// \param id - the id of the observed object.

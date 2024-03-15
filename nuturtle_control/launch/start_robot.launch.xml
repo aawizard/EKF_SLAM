@@ -57,19 +57,7 @@
     <!-- Local host group -->
     <group if="$(eval '\'$(var robot)\' == \'localhost\'')"> 
         <node name="numsr_turtlebot" pkg="numsr_turtlebot" exec="numsr_turtlebot"/>
-
-        <node name="turtle_control" pkg="nuturtle_control" exec="turtle_control" >
-            <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml"/>
-            <remap from="joint_states" to="blue/joint_states"/>
-        </node>
-        <node name="odometry" pkg="nuturtle_control" exec="odometry" >
-            <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
-            <param name="odom_id" value="odom"/>
-            <param name="body_id" value="blue/base_footprint"/>
-            <param name="wheel_left" value="wheel_left_joint"/>
-            <param name="wheel_right" value="wheel_right_joint"/>
-            <remap from="joint_states" to="blue/joint_states"/>
-        </node>
+        
         <include file="$(find-pkg-share hls_lfcd_lds_driver)/launch/hlds_laser.launch.py">
         <arg name="frame_id" value="blue/base_scan"/>
         <arg name="port" value="/dev/ttyUSB0"/>
@@ -89,6 +77,18 @@
             <param from="$(find-pkg-share nusim)/config/basic_world.yaml" />
             <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
             <param name="draw_only" value="true"/>
+        </node>
+        <node name="odometry" pkg="nuturtle_control" exec="odometry" >
+            <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml" />
+            <param name="odom_id" value="blue/odom"/>
+            <param name="body_id" value="blue/base_footprint"/>
+            <param name="wheel_left" value="wheel_left_joint"/>
+            <param name="wheel_right" value="wheel_right_joint"/>
+            <remap from="joint_states" to="blue/joint_states"/>
+        </node>
+        <node name="turtle_control" pkg="nuturtle_control" exec="turtle_control" >
+            <param from="$(find-pkg-share nuturtle_description)/config/diff_prams.yaml"/>
+            <remap from="joint_states" to="blue/joint_states"/>
         </node>
         <node pkg="tf2_ros" exec="static_transform_publisher" args="--frame-id nusim/world --child-frame-id blue/odom "/>
         

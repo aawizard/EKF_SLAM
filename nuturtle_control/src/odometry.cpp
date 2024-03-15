@@ -49,7 +49,7 @@ public:
   : Node("odometry")
   {
     declare_parameter("body_id", "blue/base_footprint");
-    declare_parameter("odom_id", "odom");
+    declare_parameter("odom_id", "blue/odom");
     declare_parameter("wheel_left", "wheel_left_joint");
     declare_parameter("wheel_right", "wheel_right_joint");
     declare_parameter("wheel_radius", -1.0);

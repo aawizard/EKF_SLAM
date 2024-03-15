@@ -59,12 +59,13 @@ public:
 
     sub_odom_ = create_subscription<nav_msgs::msg::Odometry>(
       "odom", 10, std::bind(&Slam::odom_callback, this, std::placeholders::_1));
-    if(use_fake_sensor){
-      // sub_fake_sensor_ = create_subscription<visualization_msgs::msg::MarkerArray>(
-      //   "fake_sensor", 10, std::bind(&Slam::fake_sensor_callback, this, std::placeholders::_1));
+    if (use_fake_sensor) {
+      sub_fake_sensor_ = create_subscription<visualization_msgs::msg::MarkerArray>(
+        "fake_sensor", 10, std::bind(&Slam::fake_sensor_callback, this, std::placeholders::_1));
     } else {
       sub_fake_sensor_ = create_subscription<visualization_msgs::msg::MarkerArray>(
-        "estimate_landmark", 10, std::bind(&Slam::fake_sensor_callback, this, std::placeholders::_1));
+        "estimate_landmark", 10,
+        std::bind(&Slam::fake_sensor_callback, this, std::placeholders::_1));
     }
     pub_estimate_obs_ = create_publisher<visualization_msgs::msg::MarkerArray>("estimate_obs", 10);
 
@@ -77,7 +78,7 @@ public:
     map_odom_.header.frame_id = "map";
     map_odom_.child_frame_id = odom_id;
     map_odom_.header.stamp = get_clock()->now();
-    
+
   }
 
 private:
@@ -88,7 +89,7 @@ private:
     auto q = msg->pose.pose.orientation;
     double yaw = euler_from_quaternion_yaw(q);
     // m.getRPY(roll, pitch, yaw);
-    turtlelib::Twist2D twist{msg->twist.twist.linear.x, 0, yaw};
+    turtlelib::Twist2D twist{msg->twist.twist.angular.z, msg->twist.twist.linear.x, 0};
     T_del *= turtlelib::integrate_twist(twist);
     // T_del = turtlelib::Transform2D(turtlelib::Vector2D{twist.x, twist.y}, twist.omega);
     Tob_ = turtlelib::Transform2D(
@@ -117,38 +118,38 @@ private:
 
   void fake_sensor_callback(const visualization_msgs::msg::MarkerArray::SharedPtr msg)
   {
-    
+
     // Implementing EKF SLAM, Assuming maximum of 30 landmarks
     Tmb_ = Tmo_ * Tob_;
-    //EKF SLAM Step 1 - Prediction Step
-    // WIll calculate A matrix and Q matrix
-   
-    T_del = turtlelib::Transform2D();
+
 
     //getting the state space model g(x,u,0)
     //Subscribing to fake sensor data
     for (int i = 0; i < static_cast<int>(msg->markers.size()); i++) {
       if (msg->markers[i].action == visualization_msgs::msg::Marker::ADD) {
         auto id = msg->markers[i].id;
-        if(!use_fake_sensor){
-          RCLCPP_INFO_STREAM(get_logger(), "\n\n obs  " << i);
-          id = ekf.data_association(Tmb_, msg->markers[i].pose.position.x, msg->markers[i].pose.position.y);
-          RCLCPP_INFO_STREAM(get_logger(), "ID: " << id);
+        if (!use_fake_sensor) {
+          id = ekf.data_association(
+            msg->markers[i].pose.position.x,
+            msg->markers[i].pose.position.y);
         }
-        if (id < max_obs){
-        // Update the z_obs vector
-        ekf.update_observation(
-          msg->markers[i].pose.position.x, msg->markers[i].pose.position.y,
-          id);
-        // Update the state vector
-        ekf.object_observed(
-          Tmb_, msg->markers[i].pose.position.x, msg->markers[i].pose.position.y,
-          id);
-      }
+        if (id < max_obs - 1) {
+          // Update the z_obs vector
+          ekf.update_observation(
+            msg->markers[i].pose.position.x, msg->markers[i].pose.position.y,
+            id);
+          // Update the state vector
+          ekf.object_observed(
+            Tmb_, msg->markers[i].pose.position.x, msg->markers[i].pose.position.y,
+            id);
+        }
       }
     }
-  
+    //EKF SLAM Step 1 - Prediction Step
+    // WIll calculate A matrix and Q matrix
+
     ekf.Prior_update(Tmb_, T_del);
+    T_del = turtlelib::Transform2D();
     ekf.update_measurement_model();
     ekf.posterior();
     state_ = ekf.get_state();
@@ -228,7 +229,7 @@ private:
   bool first = true;
   std::string body_id = "";
   std::string odom_id = "";
-  int max_obs = 10;
+  int max_obs = 20;
   double wall_height = 0.3;
   bool use_fake_sensor = false;
   nav_msgs::msg::Odometry odom;
@@ -259,9 +260,9 @@ private:
 int main(int argc, char * argv[])
 {
 
-        rclcpp::init(argc, argv);
-        rclcpp::spin(std::make_shared<Slam>());
-        rclcpp::shutdown();
-        return 0;
-    
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<Slam>());
+  rclcpp::shutdown();
+  return 0;
+
 }
