@@ -63,7 +63,7 @@
     - [x] Task L.1
     - [x] Task L.2
     - [x] Task L.3
-    - [ ] Task L.4
+    - [x] Task L.4
     
 - [x] Feature Detection - Task S
     - [x] Task S.1
