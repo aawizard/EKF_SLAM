@@ -202,7 +202,6 @@ int Ekf_slam::data_association(double x, double y)
   if (id > landmarks_observed) {
     landmarks_observed++;
     }
-  std::cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!11id: " << id << std::endl;
   return id;
 }
 }  // namespace turtlelib

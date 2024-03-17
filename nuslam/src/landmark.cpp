@@ -124,6 +124,10 @@ private:
       if (turtlelib::almost_equal(landmark_centroids[i][0], 0.0, 0.04) || turtlelib::almost_equal(landmark_centroids[i][1], 0.0, 0.04)) {
         continue;
       }
+      //Remove landmarks farther tha 1.5m
+      if(sqrt(pow(landmark_centroids[i][0],2) + pow(landmark_centroids[i][1],2)) > 1.4){
+        continue;
+      }
       marker.id = marker_count++;
       marker.header.frame_id = "green/base_scan";
       marker.frame_locked = true;

@@ -65,7 +65,7 @@
     </group>
     <!-- None Group -->
     <group if="$(eval '\'$(var robot)\' == \'none\'')">
-        <node pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share nuturtle_control)/config/nusim_odom.rviz -f nusim/world" name= 'rviz2' if="$(eval '\'$(var use_rviz)\' == \'true\'')">
+        <node pkg="rviz2" exec="rviz2" args="-d $(var rviz_config) -f nusim/world" name= 'rviz2' if="$(eval '\'$(var use_rviz)\' == \'true\'')">
         
         </node>
         <include file="$(find-pkg-share nuturtle_description)/launch/load_one.launch.py" >

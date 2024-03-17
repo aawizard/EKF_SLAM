@@ -10,9 +10,8 @@ This repository consists of several ROS2 packages
 - nuslam - Implements SLAM for turttlebot.
 
 # Video
+
+ https://github.com/aawizard/EKF_SLAM/assets/58395886/0e7e23ef-b3c8-45e7-aeb0-0e33d0001fb8
  
  https://github.com/ME495-Navigation/slam-project-aawizard/assets/58395886/c3506187-e952-4e26-b78c-99853354e259
 
-# Extra Notes:
-
-Odometry Error: 0.23m

@@ -209,7 +209,10 @@ public:
       turtlelib::Transform2D(turtlelib::Vector2D{x_, y_}, theta_));
 
     show_walls();
-    make_obstacles();
+    if (!draw_only_){
+      make_obstacles();
+    }
+    
 
   }
 
